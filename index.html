@@ -6,30 +6,21 @@
 <title>API & 设备管理</title>
 <style>
   * { box-sizing: border-box; }
-  body {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    margin: 0; padding: 24px;
-    background: #f5f6f8; color: #222;
-  }
-  h1 { font-size: 20px; margin: 0 0 16px; }
+  body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; background: #f5f6f8; color: #222; }
   .wrap { max-width: 1000px; margin: 0 auto; }
-  .card {
-    background: #fff; border-radius: 10px; padding: 20px;
-    margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
-  }
-  .card h2 { font-size: 16px; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+  .auth-card { max-width: 400px; margin: 100px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.1); display: none; }
+  .auth-card h2 { text-align: center; margin-top: 0; }
+  .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #eee; }
+  .auth-tabs div { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
+  .auth-tabs div.active { color: #4a7dff; border-bottom-color: #4a7dff; font-weight: bold; }
+  .main-app { display: none; }
+  .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .card h2 { font-size: 16px; margin: 0 0 16px; }
   .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; }
   .field label { font-size: 12px; color: #666; }
-  input, select {
-    padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;
-    font-size: 14px; outline: none; background: #fff;
-  }
-  input:focus, select:focus { border-color: #4a7dff; }
-  button {
-    padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
-    font-size: 14px; background: #4a7dff; color: #fff; transition: .15s;
-  }
+  input, select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; }
+  button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; background: #4a7dff; color: #fff; }
   button:hover { filter: brightness(1.08); }
   button.ghost { background: #eef1f7; color: #333; }
   button.danger { background: #ff5a5a; }
@@ -37,249 +28,210 @@
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
   th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; }
   th { color: #888; font-weight: 500; }
-  tr:hover td { background: #fafbff; }
   .empty { color: #aaa; font-size: 13px; padding: 8px 0; }
-  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #555; }
-  .key-mask { color: #999; font-style: italic; }
+  .mono { font-family: monospace; font-size: 12px; color: #555; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .top-bar h1 { margin: 0; font-size: 20px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>🔧 API 配置 & 设备绑定管理</h1>
 
-  <!-- ============ API 配置区 ============ -->
+<div id="authPage" class="auth-card">
+  <h2>账号管理</h2>
+  <div class="auth-tabs">
+    <div id="tabLogin" class="active" onclick="switchTab('login')">登录</div>
+    <div id="tabRegister" onclick="switchTab('register')">注册</div>
+  </div>
+  <div class="field"><label>用户名</label><input id="authUser" /></div>
+  <div class="field" style="margin-top:12px"><label>密码</label><input id="authPass" type="password" /></div>
+  <button id="authSubmitBtn" style="width:100%; margin-top:20px" onclick="submitAuth()">登录</button>
+  <div id="authMsg" style="color:red; font-size:13px; margin-top:10px; text-align:center"></div>
+</div>
+
+<div id="appPage" class="wrap main-app">
+  <div class="top-bar">
+    <h1>🔧 管理面板</h1>
+    <button class="ghost" onclick="logout()">退出登录</button>
+  </div>
+
   <div class="card">
     <h2>① API 配置管理</h2>
     <div class="row">
-      <div class="field"><label>名字</label><input id="apiName" placeholder="如：OpenAI 主号" /></div>
-      <div class="field"><label>接口地址</label><input id="apiUrl" placeholder="https://api.openai.com/v1" /></div>
-      <div class="field"><label>Key</label><input id="apiKey" placeholder="sk-..." /></div>
-      <div class="field"><label>模型名</label><input id="apiModel" placeholder="gpt-4o-mini" /></div>
+      <div class="field"><label>名字</label><input id="apiName" /></div>
+      <div class="field"><label>接口地址</label><input id="apiUrl" /></div>
+      <div class="field"><label>Key</label><input id="apiKey" /></div>
+      <div class="field"><label>模型名</label><input id="apiModel" /></div>
     </div>
     <div class="row">
-      <button id="apiSaveBtn">保存</button>
-      <button id="apiCancelBtn" class="ghost" style="display:none">取消编辑</button>
+      <button id="apiSaveBtn" onclick="saveApi()">保存</button>
+      <button id="apiCancelBtn" class="ghost" style="display:none" onclick="resetApiForm()">取消</button>
     </div>
     <div id="apiListWrap"></div>
   </div>
 
-  <!-- ============ 设备绑定区 ============ -->
   <div class="card">
     <h2>② 设备绑定管理</h2>
     <div class="row">
-      <div class="field"><label>设备 SN</label><input id="devSn" placeholder="如：ESP32-001" /></div>
-      <div class="field"><label>备注名</label><input id="devRemark" placeholder="客厅灯" /></div>
-      <div class="field">
-        <label>绑定 API 配置</label>
-        <select id="devConfig"><option value="">— 请选择 —</option></select>
-      </div>
+      <div class="field"><label>设备 SN</label><input id="devSn" /></div>
+      <div class="field"><label>备注名</label><input id="devRemark" /></div>
+      <div class="field"><label>绑定 API</label><select id="devConfig"></select></div>
     </div>
-    <div class="row">
-      <button id="devSaveBtn">保存</button>
-    </div>
+    <div class="row"><button onclick="saveDev()">保存</button></div>
     <div id="devListWrap"></div>
   </div>
 </div>
 
 <script>
-/* ================= 状态 ================= */
-let apiList = [];            // 当前 API 配置数组
-let editingApiId = null;     // 正在编辑的 API id（null = 新增）
-
+let apiList = [];
+let editingApiId = null;
+let authMode = 'login';
 const $ = (id) => document.getElementById(id);
+const getToken = () => localStorage.getItem("app_token") || "";
 
-/* ================= 工具 ================= */
-async function getJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("请求失败 " + url);
-  return r.json();
-}
-async function sendJSON(url, method, body) {
-  const opt = { method, headers: { "Content-Type": "application/json" } };
+async function request(url, method = "GET", body = null) {
+  const headers = { "Content-Type": "application/json" };
+  if (getToken()) headers["Authorization"] = `Bearer ${getToken()}`;
+  const opt = { method, headers };
   if (body) opt.body = JSON.stringify(body);
   const r = await fetch(url, opt);
-  if (!r.ok) {
-    const t = await r.text().catch(() => "");
-    throw new Error("请求失败 " + url + " " + t);
+  if (r.status === 401) {
+    localStorage.removeItem("app_token");
+    checkAuth();
+    throw new Error("登录失效，请重新登录");
   }
+  if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
-function esc(s) {
-  return String(s ?? "").replace(/[&<>"']/g, m =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+function switchTab(mode) {
+  authMode = mode;
+  $("tabLogin").className = mode === 'login' ? 'active' : '';
+  $("tabRegister").className = mode === 'register' ? 'active' : '';
+  $("authSubmitBtn").textContent = mode === 'login' ? '登录' : '注册';
+  $("authMsg").textContent = '';
 }
 
-/* ================= 渲染：API 列表 ================= */
+async function submitAuth() {
+  const username = $("authUser").value.trim();
+  const password = $("authPass").value;
+  if (!username || !password) return $("authMsg").textContent = "请填写用户名和密码";
+  
+  try {
+    if (authMode === 'register') {
+      await request("/api/register", "POST", { username, password });
+      alert("注册成功，请登录");
+      switchTab('login');
+    } else {
+      const res = await request("/api/login", "POST", { username, password });
+      localStorage.setItem("app_token", res.token);
+      checkAuth();
+    }
+  } catch (e) {
+    $("authMsg").textContent = e.message;
+  }
+}
+
+async function logout() {
+  try { await request("/api/logout", "POST"); } catch(e) {}
+  localStorage.removeItem("app_token");
+  checkAuth();
+}
+
+function checkAuth() {
+  if (getToken()) {
+    $("authPage").style.display = "none";
+    $("appPage").style.display = "block";
+    refreshAll();
+  } else {
+    $("authPage").style.display = "block";
+    $("appPage").style.display = "none";
+    $("authPass").value = "";
+  }
+}
+
+async function refreshAll() {
+  try {
+    const [configs, devices] = await Promise.all([
+      request("/api/config"), request("/api/device")
+    ]);
+    apiList = configs;
+    renderApiList(); fillApiDropdown(); renderDevList(devices);
+  } catch(e) { console.error(e); }
+}
+
 function renderApiList() {
   const wrap = $("apiListWrap");
-  if (!apiList.length) {
-    wrap.innerHTML = '<div class="empty">暂无 API 配置，先在上方新增一条。</div>';
-    return;
-  }
-  let html = `<table>
-    <thead><tr><th>ID</th><th>名字</th><th>接口地址</th><th>Key</th><th>模型</th><th>操作</th></tr></thead><tbody>`;
+  if (!apiList.length) { wrap.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+  let html = `<table><thead><tr><th>ID</th><th>名字</th><th>地址</th><th>模型</th><th>操作</th></tr></thead><tbody>`;
   for (const c of apiList) {
-    const keyShown = c.key ? "••••" + esc(c.key.slice(-4)) : '<span class="key-mask">无</span>';
-    html += `<tr>
-      <td>${c.id}</td>
-      <td>${esc(c.name)}</td>
-      <td class="mono">${esc(c.url)}</td>
-      <td class="mono">${keyShown}</td>
-      <td class="mono">${esc(c.model)}</td>
-      <td>
-        <button class="small ghost" onclick="editApi(${c.id})">编辑</button>
-        <button class="small danger" onclick="delApi(${c.id})">删除</button>
-      </td>
-    </tr>`;
+    html += `<tr><td>${c.id}</td><td>${c.name}</td><td class="mono">${c.url}</td><td>${c.model}</td>
+      <td><button class="small ghost" onclick="editApi(${c.id})">改</button>
+      <button class="small danger" onclick="delApi(${c.id})">删</button></td></tr>`;
   }
-  html += "</tbody></table>";
-  wrap.innerHTML = html;
+  wrap.innerHTML = html + "</tbody></table>";
 }
 
-/* ================= 渲染：设备列表 ================= */
+function fillApiDropdown() {
+  $("devConfig").innerHTML = '<option value="">— 未绑定 —</option>' + 
+    apiList.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+}
+
 function renderDevList(devices) {
   const wrap = $("devListWrap");
-  if (!devices.length) {
-    wrap.innerHTML = '<div class="empty">暂无设备绑定。</div>';
-    return;
-  }
-  let html = `<table>
-    <thead><tr><th>SN</th><th>备注</th><th>绑定 API</th><th>操作</th></tr></thead><tbody>`;
+  if (!devices.length) { wrap.innerHTML = '<div class="empty">暂无设备</div>'; return; }
+  let html = `<table><thead><tr><th>SN</th><th>备注</th><th>绑定 API</th><th>操作</th></tr></thead><tbody>`;
   for (const d of devices) {
-    html += `<tr>
-      <td class="mono">${esc(d.sn)}</td>
-      <td>${esc(d.remark)}</td>
-      <td>${d.config_name ? esc(d.config_name) : '<span class="key-mask">未绑定</span>'}</td>
-      <td>
-        <button class="small ghost" onclick="editDev('${esc(d.sn)}','${esc(d.remark)}',${d.config_id ?? "null"})">编辑</button>
-        <button class="small danger" onclick="delDev('${esc(d.sn)}')">删除</button>
-      </td>
-    </tr>`;
+    html += `<tr><td class="mono">${d.sn}</td><td>${d.remark}</td><td>${d.config_name || '-'}</td>
+      <td><button class="small ghost" onclick="editDev('${d.sn}','${d.remark}',${d.config_id ?? 'null'})">改</button>
+      <button class="small danger" onclick="delDev('${d.sn}')">删</button></td></tr>`;
   }
-  html += "</tbody></table>";
-  wrap.innerHTML = html;
+  wrap.innerHTML = html + "</tbody></table>";
 }
 
-/* ================= 渲染：下拉框 ================= */
-function fillApiDropdown() {
-  const sel = $("devConfig");
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— 请选择 —</option>' +
-    apiList.map(c => `<option value="${c.id}">${esc(c.name)}（${esc(c.model)}）</option>`).join("");
-  if (cur) sel.value = cur;
-}
-
-/* ================= 加载全部 ================= */
-async function refreshAll() {
-  const [configs, devices] = await Promise.all([
-    getJSON("/api/config"),
-    getJSON("/api/device"),
-  ]);
-  apiList = configs;
-  renderApiList();
-  fillApiDropdown();      // 下拉自动同步
-  renderDevList(devices);
-}
-
-/* ================= API 配置：保存 ================= */
-$("apiSaveBtn").onclick = async () => {
-  const name  = $("apiName").value.trim();
-  const url   = $("apiUrl").value.trim();
-  const key   = $("apiKey").value.trim();
-  const model = $("apiModel").value.trim();
-  if (!name || !url || !model) return alert("名字、接口地址、模型名必填");
-
-  const payload = { name, url, key, model };
+async function saveApi() {
+  const payload = { name: $("apiName").value.trim(), url: $("apiUrl").value.trim(), key: $("apiKey").value.trim(), model: $("apiModel").value.trim() };
+  if (!payload.name || !payload.url || !payload.model) return alert("必填项不能为空");
   if (editingApiId) payload.id = editingApiId;
-
-  try {
-    await sendJSON("/api/config", "POST", payload);
-    resetApiForm();
-    await refreshAll();
-  } catch (e) { alert(e.message); }
-};
-
-/* 编辑 API：回填表单 */
-window.editApi = (id) => {
-  const c = apiList.find(x => x.id === id);
-  if (!c) return;
-  editingApiId = id;
-  $("apiName").value = c.name;
-  $("apiUrl").value = c.url;
-  $("apiKey").value = c.key || "";
-  $("apiModel").value = c.model;
-  $("apiCancelBtn").style.display = "inline-block";
-  $("apiSaveBtn").textContent = "更新";
-};
-
-/* 取消编辑 */
-function resetApiForm() {
-  editingApiId = null;
-  $("apiName").value = $("apiUrl").value = $("apiKey").value = $("apiModel").value = "";
-  $("apiCancelBtn").style.display = "none";
-  $("apiSaveBtn").textContent = "保存";
+  await request("/api/config", "POST", payload);
+  resetApiForm(); refreshAll();
 }
-$("apiCancelBtn").onclick = resetApiForm;
 
-/* 删除 API */
-window.delApi = async (id) => {
-  if (!confirm("确定删除这条 API 配置？绑定它的设备会被置为未绑定。")) return;
-  try {
-    await sendJSON("/api/config?id=" + id, "DELETE");
-    if (editingApiId === id) resetApiForm();
-    await refreshAll();
-  } catch (e) { alert(e.message); }
-};
+function editApi(id) {
+  const c = apiList.find(x => x.id === id); if (!c) return;
+  editingApiId = id;
+  $("apiName").value = c.name; $("apiUrl").value = c.url; $("apiKey").value = c.key || ""; $("apiModel").value = c.model;
+  $("apiSaveBtn").textContent = "更新"; $("apiCancelBtn").style.display = "inline-block";
+}
 
-/* ================= 设备：保存 ================= */
-$("devSaveBtn").onclick = async () => {
-  const sn = $("devSn").value.trim();
-  const remark = $("devRemark").value.trim();
-  const config_id = $("devConfig").value || null;
-  if (!sn) return alert("设备 SN 必填");
+function resetApiForm() {
+  editingApiId = null; $("apiName").value = $("apiUrl").value = $("apiKey").value = $("apiModel").value = "";
+  $("apiSaveBtn").textContent = "保存"; $("apiCancelBtn").style.display = "none";
+}
 
-  try {
-    await sendJSON("/api/device", "POST", { sn, remark, config_id });
-    $("devSn").value = "";
-    $("devRemark").value = "";
-    $("devConfig").value = "";
-    $("devSn").disabled = false;
-    await refreshAll();
-  } catch (e) { alert(e.message); }
-};
+async function delApi(id) {
+  if (!confirm("确定删除？")) return;
+  await request("/api/config?id=" + id, "DELETE"); refreshAll();
+}
 
-/* 编辑设备：回填表单（SN 作为唯一键，编辑时禁用 SN 输入避免改键） */
-window.editDev = (sn, remark, config_id) => {
-  $("devSn").value = sn;
-  $("devSn").disabled = true;
-  $("devRemark").value = remark || "";
-  $("devConfig").value = config_id ?? "";
-  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-};
+async function saveDev() {
+  const sn = $("devSn").value.trim(), remark = $("devRemark").value.trim(), config_id = $("devConfig").value || null;
+  if (!sn) return alert("SN 必填");
+  await request("/api/device", "POST", { sn, remark, config_id });
+  $("devSn").value = $("devRemark").value = ""; $("devConfig").value = ""; $("devSn").disabled = false;
+  refreshAll();
+}
 
-/* 删除设备 */
-window.delDev = async (sn) => {
-  if (!confirm("确定删除设备 " + sn + "？")) return;
-  try {
-    await sendJSON("/api/device?sn=" + encodeURIComponent(sn), "DELETE");
-    if ($("devSn").value === sn) {
-      $("devSn").value = "";
-      $("devRemark").value = "";
-      $("devConfig").value = "";
-      $("devSn").disabled = false;
-    }
-    await refreshAll();
-  } catch (e) { alert(e.message); }
-};
+function editDev(sn, remark, config_id) {
+  $("devSn").value = sn; $("devSn").disabled = true;
+  $("devRemark").value = remark || ""; $("devConfig").value = config_id || "";
+}
 
-/* ================= 启动 ================= */
-window.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await refreshAll();
-  } catch (e) {
-    alert("初始化失败：" + e.message);
-  }
-});
+async function delDev(sn) {
+  if (!confirm("确定删除？")) return;
+  await request("/api/device?sn=" + sn, "DELETE"); refreshAll();
+}
+
+checkAuth();
 </script>
 </body>
 </html>
