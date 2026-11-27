@@ -1,1 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>API & 设备管理</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 24px;
+    background: #f5f6f8; color: #222;
+  }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  .card {
+    background: #fff; border-radius: 10px; padding: 20px;
+    margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .card h2 { font-size: 16px; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+  .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; }
+  .field label { font-size: 12px; color: #666; }
+  input, select {
+    padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;
+    font-size: 14px; outline: none; background: #fff;
+  }
+  input:focus, select:focus { border-color: #4a7dff; }
+  button {
+    padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 14px; background: #4a7dff; color: #fff; transition: .15s;
+  }
+  button:hover { filter: brightness(1.08); }
+  button.ghost { background: #eef1f7; color: #333; }
+  button.danger { background: #ff5a5a; }
+  button.small { padding: 4px 10px; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; }
+  th { color: #888; font-weight: 500; }
+  tr:hover td { background: #fafbff; }
+  .empty { color: #aaa; font-size: 13px; padding: 8px 0; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #555; }
+  .key-mask { color: #999; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔧 API 配置 & 设备绑定管理</h1>
 
+  <!-- ============ API 配置区 ============ -->
+  <div class="card">
+    <h2>① API 配置管理</h2>
+    <div class="row">
+      <div class="field"><label>名字</label><input id="apiName" placeholder="如：OpenAI 主号" /></div>
+      <div class="field"><label>接口地址</label><input id="apiUrl" placeholder="https://api.openai.com/v1" /></div>
+      <div class="field"><label>Key</label><input id="apiKey" placeholder="sk-..." /></div>
+      <div class="field"><label>模型名</label><input id="apiModel" placeholder="gpt-4o-mini" /></div>
+    </div>
+    <div class="row">
+      <button id="apiSaveBtn">保存</button>
+      <button id="apiCancelBtn" class="ghost" style="display:none">取消编辑</button>
+    </div>
+    <div id="apiListWrap"></div>
+  </div>
+
+  <!-- ============ 设备绑定区 ============ -->
+  <div class="card">
+    <h2>② 设备绑定管理</h2>
+    <div class="row">
+      <div class="field"><label>设备 SN</label><input id="devSn" placeholder="如：ESP32-001" /></div>
+      <div class="field"><label>备注名</label><input id="devRemark" placeholder="客厅灯" /></div>
+      <div class="field">
+        <label>绑定 API 配置</label>
+        <select id="devConfig"><option value="">— 请选择 —</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <button id="devSaveBtn">保存</button>
+    </div>
+    <div id="devListWrap"></div>
+  </div>
+</div>
+
+<script>
+/* ================= 状态 ================= */
+let apiList = [];            // 当前 API 配置数组
+let editingApiId = null;     // 正在编辑的 API id（null = 新增）
+
+const $ = (id) => document.getElementById(id);
+
+/* ================= 工具 ================= */
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("请求失败 " + url);
+  return r.json();
+}
+async function sendJSON(url, method, body) {
+  const opt = { method, headers: { "Content-Type": "application/json" } };
+  if (body) opt.body = JSON.stringify(body);
+  const r = await fetch(url, opt);
+  if (!r.ok) {
+    const t = await r.text().catch(() => "");
+    throw new Error("请求失败 " + url + " " + t);
+  }
+  return r.json();
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, m =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+}
+
+/* ================= 渲染：API 列表 ================= */
+function renderApiList() {
+  const wrap = $("apiListWrap");
+  if (!apiList.length) {
+    wrap.innerHTML = '<div class="empty">暂无 API 配置，先在上方新增一条。</div>';
+    return;
+  }
+  let html = `<table>
+    <thead><tr><th>ID</th><th>名字</th><th>接口地址</th><th>Key</th><th>模型</th><th>操作</th></tr></thead><tbody>`;
+  for (const c of apiList) {
+    const keyShown = c.key ? "••••" + esc(c.key.slice(-4)) : '<span class="key-mask">无</span>';
+    html += `<tr>
+      <td>${c.id}</td>
+      <td>${esc(c.name)}</td>
+      <td class="mono">${esc(c.url)}</td>
+      <td class="mono">${keyShown}</td>
+      <td class="mono">${esc(c.model)}</td>
+      <td>
+        <button class="small ghost" onclick="editApi(${c.id})">编辑</button>
+        <button class="small danger" onclick="delApi(${c.id})">删除</button>
+      </td>
+    </tr>`;
+  }
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+}
+
+/* ================= 渲染：设备列表 ================= */
+function renderDevList(devices) {
+  const wrap = $("devListWrap");
+  if (!devices.length) {
+    wrap.innerHTML = '<div class="empty">暂无设备绑定。</div>';
+    return;
+  }
+  let html = `<table>
+    <thead><tr><th>SN</th><th>备注</th><th>绑定 API</th><th>操作</th></tr></thead><tbody>`;
+  for (const d of devices) {
+    html += `<tr>
+      <td class="mono">${esc(d.sn)}</td>
+      <td>${esc(d.remark)}</td>
+      <td>${d.config_name ? esc(d.config_name) : '<span class="key-mask">未绑定</span>'}</td>
+      <td>
+        <button class="small ghost" onclick="editDev('${esc(d.sn)}','${esc(d.remark)}',${d.config_id ?? "null"})">编辑</button>
+        <button class="small danger" onclick="delDev('${esc(d.sn)}')">删除</button>
+      </td>
+    </tr>`;
+  }
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+}
+
+/* ================= 渲染：下拉框 ================= */
+function fillApiDropdown() {
+  const sel = $("devConfig");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 请选择 —</option>' +
+    apiList.map(c => `<option value="${c.id}">${esc(c.name)}（${esc(c.model)}）</option>`).join("");
+  if (cur) sel.value = cur;
+}
+
+/* ================= 加载全部 ================= */
+async function refreshAll() {
+  const [configs, devices] = await Promise.all([
+    getJSON("/api/config"),
+    getJSON("/api/device"),
+  ]);
+  apiList = configs;
+  renderApiList();
+  fillApiDropdown();      // 下拉自动同步
+  renderDevList(devices);
+}
+
+/* ================= API 配置：保存 ================= */
+$("apiSaveBtn").onclick = async () => {
+  const name  = $("apiName").value.trim();
+  const url   = $("apiUrl").value.trim();
+  const key   = $("apiKey").value.trim();
+  const model = $("apiModel").value.trim();
+  if (!name || !url || !model) return alert("名字、接口地址、模型名必填");
+
+  const payload = { name, url, key, model };
+  if (editingApiId) payload.id = editingApiId;
+
+  try {
+    await sendJSON("/api/config", "POST", payload);
+    resetApiForm();
+    await refreshAll();
+  } catch (e) { alert(e.message); }
+};
+
+/* 编辑 API：回填表单 */
+window.editApi = (id) => {
+  const c = apiList.find(x => x.id === id);
+  if (!c) return;
+  editingApiId = id;
+  $("apiName").value = c.name;
+  $("apiUrl").value = c.url;
+  $("apiKey").value = c.key || "";
+  $("apiModel").value = c.model;
+  $("apiCancelBtn").style.display = "inline-block";
+  $("apiSaveBtn").textContent = "更新";
+};
+
+/* 取消编辑 */
+function resetApiForm() {
+  editingApiId = null;
+  $("apiName").value = $("apiUrl").value = $("apiKey").value = $("apiModel").value = "";
+  $("apiCancelBtn").style.display = "none";
+  $("apiSaveBtn").textContent = "保存";
+}
+$("apiCancelBtn").onclick = resetApiForm;
+
+/* 删除 API */
+window.delApi = async (id) => {
+  if (!confirm("确定删除这条 API 配置？绑定它的设备会被置为未绑定。")) return;
+  try {
+    await sendJSON("/api/config?id=" + id, "DELETE");
+    if (editingApiId === id) resetApiForm();
+    await refreshAll();
+  } catch (e) { alert(e.message); }
+};
+
+/* ================= 设备：保存 ================= */
+$("devSaveBtn").onclick = async () => {
+  const sn = $("devSn").value.trim();
+  const remark = $("devRemark").value.trim();
+  const config_id = $("devConfig").value || null;
+  if (!sn) return alert("设备 SN 必填");
+
+  try {
+    await sendJSON("/api/device", "POST", { sn, remark, config_id });
+    $("devSn").value = "";
+    $("devRemark").value = "";
+    $("devConfig").value = "";
+    $("devSn").disabled = false;
+    await refreshAll();
+  } catch (e) { alert(e.message); }
+};
+
+/* 编辑设备：回填表单（SN 作为唯一键，编辑时禁用 SN 输入避免改键） */
+window.editDev = (sn, remark, config_id) => {
+  $("devSn").value = sn;
+  $("devSn").disabled = true;
+  $("devRemark").value = remark || "";
+  $("devConfig").value = config_id ?? "";
+  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+};
+
+/* 删除设备 */
+window.delDev = async (sn) => {
+  if (!confirm("确定删除设备 " + sn + "？")) return;
+  try {
+    await sendJSON("/api/device?sn=" + encodeURIComponent(sn), "DELETE");
+    if ($("devSn").value === sn) {
+      $("devSn").value = "";
+      $("devRemark").value = "";
+      $("devConfig").value = "";
+      $("devSn").disabled = false;
+    }
+    await refreshAll();
+  } catch (e) { alert(e.message); }
+};
+
+/* ================= 启动 ================= */
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await refreshAll();
+  } catch (e) {
+    alert("初始化失败：" + e.message);
+  }
+});
+</script>
+</body>
+</html>
