@@ -99,13 +99,4 @@ export async function onRequest(context) {
 
     if (path === "/api/get_cfg" && method === "GET") {
       const sn = url.searchParams.get("sn");
-      const row = await db.prepare(`SELECT c.url, c.model FROM device d JOIN config c ON d.config_id = c.id WHERE d.sn=?`).bind(sn).first();
-      if (!row) return json({ error: "not found" }, 404);
-      return json({ url: row.url, model: row.model });
-    }
-
-    return json({ error: "Not Found" }, 404);
-  } catch (e) {
-    return json({ ok: false, error: String(e) }, 500);
-  }
-}
+      const row = await db
