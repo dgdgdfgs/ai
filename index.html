@@ -5,179 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AI 控制台</title>
 <style>
-:root{
-  --blue:#1a56db; --blue-dark:#1646b8; --black:#111827; --white:#ffffff;
-  --line:#e5e7eb; --muted:#6b7280; --bg:#f5f6f8; --red:#dc2626;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--black);font-size:14px}
-.auth-card{max-width:380px;margin:9vh auto;background:var(--white);border:1px solid var(--line);padding:32px;animation:fade .3s ease}
-.auth-card h2{text-align:center;margin:0 0 24px;font-size:20px}
-.field{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
-.field label{font-size:12px;color:var(--muted)}
-input,select{width:100%;padding:10px;border:1px solid var(--line);background:var(--white);color:var(--black);font-size:14px;outline:none;border-radius:0;transition:border-color .18s}
-input:focus,select:focus{border-color:var(--blue)}
-.captcha-row{display:flex;gap:10px;align-items:stretch}
-.captcha-row input{flex:1}
-.captcha-box{width:150px;height:44px;border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
-.captcha-box svg{height:100%;width:100%}
-button{padding:10px 18px;border:1px solid var(--blue);background:var(--blue);color:var(--white);cursor:pointer;font-size:14px;transition:background .18s,border-color .18s}
-button:hover{background:var(--blue-dark);border-color:var(--blue-dark)}
-button:disabled{opacity:.6;cursor:not-allowed}
-button.block{width:100%;margin-top:6px}
-button.ghost{background:var(--white);color:var(--black);border-color:var(--line)}
-button.ghost:hover{color:var(--blue);border-color:var(--blue);background:var(--white)}
-button.danger{background:var(--white);color:var(--black);border-color:var(--line)}
-button.danger:hover{background:var(--black);border-color:var(--black);color:var(--white)}
-button.small{padding:5px 10px;font-size:12px}
-.msg{font-size:13px;min-height:18px;margin-top:10px;text-align:center;color:var(--red)}
-.app{display:none;max-width:960px;margin:0 auto;padding:20px}
-.topbar{display:flex;justify-content:space-between;align-items:center;background:var(--white);border:1px solid var(--line);padding:14px 20px;margin-bottom:20px;animation:fade .3s ease}
-.topbar h1{margin:0;font-size:18px}
-.topbar .right{display:flex;align-items:center;gap:12px}
-.topbar .user{color:var(--muted);font-size:13px}
-.card{background:var(--white);border:1px solid var(--line);padding:20px;animation:fade .3s ease}
-.card h2{font-size:15px;margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line)}
-.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px}
-.row .field{margin-bottom:0;flex:1 1 180px}
-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
-th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
-th{color:var(--muted);font-weight:600}
-.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
-.empty{color:var(--muted);padding:14px 0;text-align:center}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 18px;font-size:13px;z-index:99;display:none}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fff; }
+  iframe { display: block; width: 100%; height: 100%; border: 0; }
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 57px;
+    background: #fff; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; padding: 0 20px;
+    font: 600 16px system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #1a56db; z-index: 9999;
+  }
+  .bottom-cover {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 135px;
+    background: #f8fafb; z-index: 9999; pointer-events: none;
+  }
 </style>
 </head>
 <body>
-
-<div id="authPage" class="auth-card">
-  <h2>AI 控制台</h2>
-  <div class="field"><label>用户名</label><input id="username" autocomplete="username" /></div>
-  <div class="field"><label>密码</label><input id="password" type="password" autocomplete="current-password" /></div>
-  <div class="field"><label>验证码</label>
-    <div class="captcha-row">
-      <input id="captcha" maxlength="8" placeholder="输入右侧字符" />
-      <div class="captcha-box" id="captchaBox" title="点击刷新"></div>
-    </div>
-  </div>
-  <button id="loginBtn" class="block" onclick="doLogin()">登录</button>
-  <div id="authMsg" class="msg"></div>
-</div>
-
-<div id="appPage" class="app">
-  <div class="topbar">
-    <h1>AI 控制台</h1>
-    <div class="right">
-      <span class="user" id="who"></span>
-      <button class="ghost small" onclick="doLogout()">退出</button>
-    </div>
-  </div>
-  <div class="card">
-    <h2>账号信息</h2>
-    <div id="profile"></div>
-  </div>
-  <div class="card" style="margin-top:20px">
-    <h2>设备管理</h2>
-    <p style="color:var(--muted);font-size:13px">官方云的设备接口需登录后在控制台加载,拿到 token 后我再补全这里的列表与绑定。当前账号信息已可正常读取。</p>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script>
-var API_BASE = location.origin + '/api';
-var TOKEN_KEY = 'ai_console_token';
-var $ = function(id){ return document.getElementById(id); };
-var captchaId = '';
-
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
-  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-}); }
-function toast(msg){
-  var t=$('toast'); t.textContent=msg; t.style.display='block';
-  clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2600);
-}
-
-function api(path, method, body, needAuth){
-  var headers = {'Content-Type':'application/json'};
-  if(needAuth !== false){
-    var token = localStorage.getItem(TOKEN_KEY) || '';
-    if(token) headers['Authorization'] = 'Bearer ' + token;
-  }
-  var opt = {method: method || 'GET', headers: headers};
-  if(body !== undefined && body !== null) opt.body = JSON.stringify(body);
-  return fetch(API_BASE + path, opt).then(function(r){
-    var ct = r.headers.get('content-type')||'';
-    if(ct.indexOf('json')<0) throw new Error('接口返回异常(HTTP '+r.status+'),请检查 Nginx 转发');
-    return r.json();
-  }).then(function(res){
-    if(res.success === false){
-      if(/401|unauthorized|loginRequired/i.test(res.message||'')){
-        localStorage.removeItem(TOKEN_KEY); showAuth();
-      }
-      throw new Error(res.message || '请求失败');
-    }
-    return res.data;
-  });
-}
-
-function loadCaptcha(){
-  fetch(API_BASE + '/auth/captcha?format=json', {cache:'no-store'})
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if(!res.success) throw new Error('验证码获取失败');
-      captchaId = res.data.captcha_id;
-      $('captchaBox').innerHTML = res.data.svg || '';
-    })
-    .catch(function(e){ $('authMsg').textContent='验证码加载失败:'+e.message+'（点图片重试）'; });
-}
-$('captchaBox').onclick = loadCaptcha;
-
-function doLogin(){
-  var u=$('username').value.trim(), p=$('password').value, c=$('captcha').value.trim();
-  if(!u || !p || !c){ $('authMsg').textContent='请填写用户名、密码和验证码'; return; }
-  $('loginBtn').disabled=true; $('authMsg').textContent='登录中...';
-  api('/auth/login','POST',{username:u, password:p, captcha_code:c, captcha_id:captchaId}, false)
-    .then(function(data){
-      localStorage.setItem(TOKEN_KEY, data.token || '');
-      $('authMsg').textContent=''; $('password').value='';
-      showApp();
-    })
-    .catch(function(e){
-      var m=e.message||'登录失败';
-      if(m.indexOf('captcha')>=0 || m.indexOf('验证码')>=0) m='验证码错误,请重新输入';
-      $('authMsg').textContent=m; loadCaptcha(); $('loginBtn').disabled=false;
-    });
-}
-
-function doLogout(){
-  api('/auth/logout','POST',{}).catch(function(){});
-  localStorage.removeItem(TOKEN_KEY); $('captcha').value=''; showAuth();
-}
-
-function showAuth(){
-  $('appPage').style.display='none'; $('authPage').style.display='block'; loadCaptcha();
-}
-function showApp(){
-  $('authPage').style.display='none'; $('appPage').style.display='block';
-  api('/auth/me','GET').then(function(me){
-    var name = (me && (me.nickname||me.username||me.name)) || '已登录用户';
-    $('who').textContent = name;
-    var h='<table><tbody>';
-    if(me){
-      if(me.username) h+='<tr><th>用户名</th><td>'+esc(me.username)+'</td></tr>';
-      if(me.nickname) h+='<tr><th>昵称</th><td>'+esc(me.nickname)+'</td></tr>';
-      if(me.phone) h+='<tr><th>手机</th><td>'+esc(me.phone)+'</td></tr>';
-      if(me.user_id) h+='<tr><th>用户 ID</th><td class="mono">'+esc(me.user_id)+'</td></tr>';
-    }
-    h+='</tbody></table>';
-    $('profile').innerHTML = h;
-  }).catch(function(e){ $('profile').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
-}
-
-loadCaptcha();
-if(localStorage.getItem(TOKEN_KEY)){ showApp(); } else { showAuth(); }
-</script>
+<div class="topbar">AI 控制台</div>
+<div class="bottom-cover"></div>
+<iframe src="https://xiaozhi.me/console/" allow="clipboard-read; clipboard-write; microphone; camera" allowfullscreen></iframe>
 </body>
 </html>
