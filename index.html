@@ -3,396 +3,89 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>API & 设备管理</title>
+<title>AI 控制台</title>
 <style>
-  :root {
-    --blue: #1a56db;
-    --blue-dark: #1646b8;
-    --black: #111827;
-    --white: #ffffff;
-    --line: #e5e7eb;
-    --muted: #6b7280;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    background: var(--white);
-    color: var(--black);
-    font-size: 14px;
-  }
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px; }
-  .auth-card {
-    max-width: 400px;
-    margin: 80px auto;
-    background: var(--white);
-    border: 1px solid var(--line);
-    padding: 30px;
-  }
-  .auth-card h2 { text-align: center; margin: 0 0 20px; font-size: 20px; }
-  .auth-tabs { position: relative; display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
-  .auth-tabs div {
-    flex: 1;
-    text-align: center;
-    padding: 10px;
-    cursor: pointer;
-    color: var(--muted);
-    transition: color .25s ease;
-  }
-  .auth-tabs div.active { color: var(--blue); font-weight: 700; }
-  .auth-slider { position: absolute; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--blue); transition: transform .28s ease; }
-  .auth-slider.register { transform: translateX(100%); }
-  .main-app { display: none; }
-  .card { background: var(--white); border: 1px solid var(--line); padding: 20px; margin-bottom: 24px; }
-  .card h2 { font-size: 16px; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-  .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-  .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; }
-  .field label { font-size: 12px; color: var(--muted); }
-  input, select {
-    padding: 9px 10px;
-    border: 1px solid var(--line);
-    background: var(--white);
-    color: var(--black);
-    font-size: 14px;
-    outline: none;
-    border-radius: 0;
-    transition: border-color .18s ease;
-  }
-  input:focus, select:focus { border-color: var(--blue); }
-  button {
-    padding: 9px 18px;
-    border: 1px solid var(--blue);
-    background: var(--blue);
-    color: var(--white);
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color .18s ease, border-color .18s ease, color .18s ease;
-  }
-  button:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
-  button.ghost { background: var(--white); color: var(--black); border-color: var(--line); }
-  button.ghost:hover { border-color: var(--blue); color: var(--blue); background: var(--white); }
-  button.danger { background: var(--white); color: var(--black); border-color: var(--line); }
-  button.danger:hover { border-color: var(--black); background: var(--black); color: var(--white); }
-  button.small { padding: 4px 10px; font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
-  th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; }
-  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-  .top-bar h1 { margin: 0; font-size: 20px; }
-  .top-actions { display: flex; gap: 8px; }
-  .msg { font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; color: var(--black); font-weight: 600; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .auth-card, .main-app .top-bar, .main-app .card { animation: fadeUp .32s ease both; }
-  .main-app .card:nth-of-type(2) { animation-delay: .06s; }
-  .main-app .card:nth-of-type(3) { animation-delay: .12s; }
-  .main-app .card:nth-of-type(4) { animation-delay: .18s; }
-  tbody tr { animation: fadeUp .25s ease both; }
-  tbody tr:nth-child(1) { animation-delay: .04s; }
-  tbody tr:nth-child(2) { animation-delay: .08s; }
-  tbody tr:nth-child(3) { animation-delay: .12s; }
-  tbody tr:nth-child(4) { animation-delay: .16s; }
-  tbody tr:nth-child(5) { animation-delay: .2s; }
-  .msg { transition: opacity .18s ease; }
+:root{
+  --blue:#1a56db; --blue-dark:#1646b8; --black:#111827; --white:#ffffff;
+  --line:#e5e7eb; --muted:#6b7280; --bg:#f5f6f8; --red:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--black);font-size:14px}
+a{color:var(--blue)}
+.auth-card{max-width:380px;margin:9vh auto;background:var(--white);border:1px solid var(--line);padding:32px}
+.auth-card h2{text-align:center;margin:0 0 24px;font-size:20px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
+.field label{font-size:12px;color:var(--muted)}
+input,select{width:100%;padding:10px;border:1px solid var(--line);background:var(--white);color:var(--black);font-size:14px;outline:none;border-radius:0;transition:border-color .18s}
+input:focus,select:focus{border-color:var(--blue)}
+.captcha-row{display:flex;gap:10px;align-items:stretch}
+.captcha-row input{flex:1}
+.captcha-row img{width:130px;height:42px;border:1px solid var(--line);cursor:pointer;object-fit:cover}
+button{padding:10px 18px;border:1px solid var(--blue);background:var(--blue);color:var(--white);cursor:pointer;font-size:14px;transition:background .18s,border-color .18s}
+button:hover{background:var(--blue-dark);border-color:var(--blue-dark)}
+button:disabled{opacity:.6;cursor:not-allowed}
+button.block{width:100%;margin-top:6px}
+button.ghost{background:var(--white);color:var(--black);border-color:var(--line)}
+button.ghost:hover{color:var(--blue);border-color:var(--blue);background:var(--white)}
+button.danger{background:var(--white);color:var(--black);border-color:var(--line)}
+button.danger:hover{background:var(--black);border-color:var(--black);color:var(--white)}
+button.small{padding:5px 10px;font-size:12px}
+.msg{font-size:13px;min-height:18px;margin-top:10px;text-align:center;color:var(--red)}
+.msg.ok{color:var(--blue)}
+.app{display:none;max-width:1080px;margin:0 auto;padding:20px}
+.topbar{display:flex;justify-content:space-between;align-items:center;background:var(--white);border:1px solid var(--line);padding:14px 20px;margin-bottom:20px}
+.topbar h1{margin:0;font-size:18px}
+.topbar .right{display:flex;align-items:center;gap:12px}
+.topbar .user{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:20px}
+.tabs div{padding:10px 20px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .18s,border-color .18s}
+.tabs div.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+.panel{display:none;background:var(--white);border:1px solid var(--line);padding:20px}
+.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel h2{font-size:15px;margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px}
+.row .field{margin-bottom:0;flex:1 1 180px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.empty{color:var(--muted);padding:14px 0;text-align:center}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 18px;font-size:13px;z-index:99;display:none}
+.tag{display:inline-block;padding:2px 8px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
 
 <div id="authPage" class="auth-card">
-  <h2>账号管理</h2>
-  <div class="auth-tabs">
-    <div id="tabLogin" class="active" onclick="switchTab('login')">登录</div>
-    <div id="tabRegister" onclick="switchTab('register')">注册</div>
-    <span id="authSlider" class="auth-slider"></span>
+  <h2>AI 控制台</h2>
+  <div class="field"><label>用户名</label><input id="username" autocomplete="username" /></div>
+  <div class="field"><label>密码</label><input id="password" type="password" autocomplete="current-password" /></div>
+  <div class="field"><label>验证码</label>
+    <div class="captcha-row">
+      <input id="captcha" maxlength="5" placeholder="输入右侧字符" />
+      <img id="captchaImg" title="点击刷新" alt="验证码" />
+    </div>
   </div>
-  <div class="field"><label>用户名</label><input id="authUser" /></div>
-  <div class="field" style="margin-top:12px"><label>密码</label><input id="authPass" type="password" /></div>
-  <button id="authSubmitBtn" style="width:100%; margin-top:20px" onclick="submitAuth()">登录</button>
+  <button id="loginBtn" class="block" onclick="doLogin()">登录</button>
   <div id="authMsg" class="msg"></div>
 </div>
 
-<div id="appPage" class="wrap main-app">
-  <div class="top-bar">
-    <h1>API &amp; 设备管理</h1>
-    <div class="top-actions">
-      <button class="ghost" onclick="logout()">退出登录</button>
+<div id="appPage" class="app">
+  <div class="topbar">
+    <h1>AI 控制台</h1>
+    <div class="right">
+      <span class="user" id="who"></span>
+      <button class="ghost small" onclick="doLogout()">退出</button>
     </div>
   </div>
-
-  <div class="card">
-    <h2>① API 配置管理</h2>
-    <div class="row">
-      <div class="field"><label>名字</label><input id="apiName" /></div>
-      <div class="field"><label>接口地址</label><input id="apiUrl" /></div>
-      <div class="field"><label>Key</label><input id="apiKey" /></div>
-      <div class="field"><label>模型名</label><input id="apiModel" /></div>
-    </div>
-    <div class="row">
-      <button id="apiSaveBtn" onclick="saveApi()">保存</button>
-      <button id="apiCancelBtn" class="ghost" style="display:none" onclick="resetApiForm()">取消</button>
-    </div>
-    <div id="apiListWrap"></div>
+  <div class="tabs">
+    <div id="tabDevice" class="active" onclick="switchPanel('device')">设备管理</div>
+    <div id="tabVoice" onclick="switchPanel('voice')">音色管理</div>
+    <div id="tabPwd" onclick="switchPanel('pwd')">修改密码</div>
   </div>
 
-  <div class="card">
-    <h2>② 设备绑定管理</h2>
+  <div id="panelDevice" class="panel active">
+    <h2>设备绑定</h2>
     <div class="row">
-      <div class="field"><label>设备 SN</label><input id="devSn" /></div>
-      <div class="field"><label>备注名</label><input id="devRemark" /></div>
-      <div class="field"><label>绑定 API</label><select id="devConfig"></select></div>
-    </div>
-    <div class="row"><button onclick="saveDev()">保存</button></div>
-    <div id="devListWrap"></div>
-  </div>
-
-  <div class="card">
-    <h2>③ 修改密码</h2>
-    <div class="row">
-      <div class="field"><label>原密码</label><input id="oldPass" type="password" /></div>
-      <div class="field"><label>新密码</label><input id="newPass" type="password" /></div>
-      <div class="field"><label>确认新密码</label><input id="confirmPass" type="password" /></div>
-    </div>
-    <div class="row"><button onclick="changePassword()">修改密码</button></div>
-  </div>
-</div>
-
-<script>
-let apiList = [];
-let editingApiId = null;
-let authMode = 'login';
-const $ = (id) => document.getElementById(id);
-const getToken = () => localStorage.getItem("app_token") || "";
-
-async function request(url, method = "GET", body = null) {
-  const headers = { "Content-Type": "application/json" };
-  if (getToken()) headers["Authorization"] = `Bearer ${getToken()}`;
-  const opt = { method, headers };
-  if (body) opt.body = JSON.stringify(body);
-  const r = await fetch(url, opt);
-  if (r.status === 401) {
-    localStorage.removeItem("app_token");
-    checkAuth();
-    throw new Error("登录失效");
-  }
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error || r.statusText);
-  return data;
-}
-
-function switchTab(mode) {
-  authMode = mode;
-  $("tabLogin").className = mode === 'login' ? 'active' : '';
-  $("tabRegister").className = mode === 'register' ? 'active' : '';
-  $("authSlider").className = "auth-slider" + (mode === 'register' ? " register" : "");
-  $("authSubmitBtn").textContent = mode === 'login' ? '登录' : '注册';
-  $("authMsg").textContent = '';
-}
-
-async function submitAuth() {
-  const username = $("authUser").value.trim();
-  const password = $("authPass").value;
-  if (!username || !password) {
-    $("authMsg").textContent = "请填写账号和密码";
-    return;
-  }
-  $("authMsg").textContent = "处理中...";
-  try {
-    if (authMode === 'register') {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        $("authMsg").textContent = data.error || "注册失败";
-        return;
-      }
-      $("authMsg").textContent = "注册成功，请登录";
-      switchTab('login');
-      return;
-    }
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      $("authMsg").textContent = data.error || "登录失败";
-      return;
-    }
-    if (!data.token) {
-      $("authMsg").textContent = "登录失败，未返回凭证";
-      return;
-    }
-    localStorage.setItem("app_token", data.token);
-    $("authMsg").textContent = "";
-    checkAuth();
-  } catch (e) {
-    $("authMsg").textContent = "请求失败：" + e.message;
-  }
-}
-
-async function logout() {
-  try { await request("/api/logout", "POST"); } catch (e) {}
-  localStorage.removeItem("app_token");
-  checkAuth();
-}
-
-function checkAuth() {
-  if (getToken()) {
-    $("authPage").style.display = "none";
-    $("appPage").style.display = "block";
-    refreshAll();
-  } else {
-    $("authPage").style.display = "block";
-    $("appPage").style.display = "none";
-    $("authPass").value = "";
-  }
-}
-
-async function refreshAll() {
-  try {
-    const [configs, devices] = await Promise.all([
-      request("/api/config"), request("/api/device")
-    ]);
-    apiList = configs;
-    renderApiList();
-    fillApiDropdown();
-    renderDevList(devices);
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-function esc(s) {
-  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[c]);
-}
-
-function renderApiList() {
-  const wrap = $("apiListWrap");
-  if (!apiList.length) { wrap.innerHTML = '<div class="empty">暂无数据</div>'; return; }
-  let html = '<table><thead><tr><th>ID</th><th>名字</th><th>地址</th><th>模型</th><th>操作</th></tr></thead><tbody>';
-  for (const c of apiList) {
-    html += `<tr><td>${c.id}</td><td>${esc(c.name)}</td><td class="mono">${esc(c.url)}</td><td>${esc(c.model)}</td>
-      <td><button class="small ghost" onclick="editApi(${c.id})">改</button>
-      <button class="small danger" onclick="delApi(${c.id})">删</button></td></tr>`;
-  }
-  wrap.innerHTML = html + "</tbody></table>";
-}
-
-function fillApiDropdown() {
-  $("devConfig").innerHTML = '<option value="">— 未绑定 —</option>' +
-    apiList.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
-}
-
-function renderDevList(devices) {
-  const wrap = $("devListWrap");
-  if (!devices.length) { wrap.innerHTML = '<div class="empty">暂无设备</div>'; return; }
-  let html = '<table><thead><tr><th>SN</th><th>备注</th><th>绑定 API</th><th>操作</th></tr></thead><tbody>';
-  for (const d of devices) {
-    html += `<tr><td class="mono">${esc(d.sn)}</td><td>${esc(d.remark)}</td><td>${esc(d.config_name || '-')}</td>
-      <td><button class="small ghost" onclick="editDev('${esc(d.sn)}','${esc(d.remark)}',${d.config_id ?? 'null'})">改</button>
-      <button class="small danger" onclick="delDev('${esc(d.sn)}')">删</button></td></tr>`;
-  }
-  wrap.innerHTML = html + "</tbody></table>";
-}
-
-async function saveApi() {
-  const payload = {
-    name: $("apiName").value.trim(),
-    url: $("apiUrl").value.trim(),
-    key: $("apiKey").value.trim(),
-    model: $("apiModel").value.trim()
-  };
-  if (!payload.name || !payload.url || !payload.model) { alert("必填项不能为空"); return; }
-  if (editingApiId) payload.id = editingApiId;
-  try {
-    await request("/api/config", "POST", payload);
-    resetApiForm();
-    refreshAll();
-  } catch (e) { alert(e.message); }
-}
-
-function editApi(id) {
-  const c = apiList.find(x => x.id === id);
-  if (!c) return;
-  editingApiId = id;
-  $("apiName").value = c.name;
-  $("apiUrl").value = c.url;
-  $("apiKey").value = c.key || "";
-  $("apiModel").value = c.model;
-  $("apiSaveBtn").textContent = "更新";
-  $("apiCancelBtn").style.display = "inline-block";
-}
-
-function resetApiForm() {
-  editingApiId = null;
-  $("apiName").value = $("apiUrl").value = $("apiKey").value = $("apiModel").value = "";
-  $("apiSaveBtn").textContent = "保存";
-  $("apiCancelBtn").style.display = "none";
-}
-
-async function delApi(id) {
-  if (!confirm("确定删除？")) return;
-  try {
-    await request("/api/config?id=" + id, "DELETE");
-    refreshAll();
-  } catch (e) { alert(e.message); }
-}
-
-async function saveDev() {
-  const sn = $("devSn").value.trim();
-  const remark = $("devRemark").value.trim();
-  const config_id = $("devConfig").value || null;
-  if (!sn) { alert("SN 必填"); return; }
-  try {
-    await request("/api/device", "POST", { sn, remark, config_id });
-    $("devSn").value = $("devRemark").value = "";
-    $("devConfig").value = "";
-    $("devSn").disabled = false;
-    refreshAll();
-  } catch (e) { alert(e.message); }
-}
-
-function editDev(sn, remark, config_id) {
-  $("devSn").value = sn;
-  $("devSn").disabled = true;
-  $("devRemark").value = remark || "";
-  $("devConfig").value = config_id || "";
-}
-
-async function delDev(sn) {
-  if (!confirm("确定删除？")) return;
-  try {
-    await request("/api/device?sn=" + encodeURIComponent(sn), "DELETE");
-    refreshAll();
-  } catch (e) { alert(e.message); }
-}
-
-async function changePassword() {
-  const old_password = $("oldPass").value;
-  const new_password = $("newPass").value;
-  const confirm_password = $("confirmPass").value;
-  if (!old_password || !new_password) { alert("请填写原密码和新密码"); return; }
-  if (new_password !== confirm_password) { alert("两次新密码不一致"); return; }
-  try {
-    const data = await request("/api/password", "POST", { old_password, new_password });
-    alert(data.message || "密码已修改，请重新登录");
-    $("oldPass").value = $("newPass").value = $("confirmPass").value = "";
-    logout();
-  } catch (e) { alert(e.message); }
-}
-
-checkAuth();
-</script>
-</body>
-</html>
+      <div class="field"><label>选择智能体</label><select id="agentSel" onchange="loadDevices(
