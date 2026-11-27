@@ -5,33 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>API & 设备管理</title>
 <style>
+  :root {
+    --blue: #1a56db;
+    --blue-dark: #1646b8;
+    --black: #111827;
+    --white: #ffffff;
+    --line: #e5e7eb;
+    --muted: #6b7280;
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; background: #f5f6f8; color: #222; }
-  .wrap { max-width: 1000px; margin: 0 auto; }
-  .auth-card { max-width: 400px; margin: 80px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.1); display: none; }
-  .auth-card h2 { text-align: center; margin-top: 0; }
-  .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #eee; }
-  .auth-tabs div { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
-  .auth-tabs div.active { color: #4a7dff; border-bottom-color: #4a7dff; font-weight: bold; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--white);
+    color: var(--black);
+    font-size: 14px;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px; }
+  .auth-card {
+    max-width: 400px;
+    margin: 80px auto;
+    background: var(--white);
+    border: 1px solid var(--line);
+    padding: 30px;
+  }
+  .auth-card h2 { text-align: center; margin: 0 0 20px; font-size: 20px; }
+  .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .auth-tabs div {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+  }
+  .auth-tabs div.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; }
   .main-app { display: none; }
-  .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-  .card h2 { font-size: 16px; margin: 0 0 16px; }
+  .card { background: var(--white); border: 1px solid var(--line); padding: 20px; margin-bottom: 24px; }
+  .card h2 { font-size: 16px; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
   .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; }
-  .field label { font-size: 12px; color: #666; }
-  input, select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; }
-  button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; background: #4a7dff; color: #fff; }
-  button:hover { filter: brightness(1.08); }
-  button.ghost { background: #eef1f7; color: #333; }
-  button.danger { background: #ff5a5a; }
+  .field label { font-size: 12px; color: var(--muted); }
+  input, select {
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    background: var(--white);
+    color: var(--black);
+    font-size: 14px;
+    outline: none;
+    border-radius: 0;
+  }
+  input:focus, select:focus { border-color: var(--blue); }
+  button {
+    padding: 9px 18px;
+    border: 1px solid var(--blue);
+    background: var(--blue);
+    color: var(--white);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+  button.ghost { background: var(--white); color: var(--black); border-color: var(--line); }
+  button.ghost:hover { border-color: var(--blue); color: var(--blue); background: var(--white); }
+  button.danger { background: var(--white); color: var(--black); border-color: var(--line); }
+  button.danger:hover { border-color: var(--black); background: var(--black); color: var(--white); }
   button.small { padding: 4px 10px; font-size: 12px; }
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
-  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; }
-  th { color: #888; font-weight: 500; }
-  .empty { color: #aaa; font-size: 13px; padding: 8px 0; }
-  .mono { font-family: monospace; font-size: 12px; color: #555; }
-  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
   .top-bar h1 { margin: 0; font-size: 20px; }
+  .top-actions { display: flex; gap: 8px; }
+  .msg { font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; color: var(--black); font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 8px; border: 1px solid var(--line); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -45,13 +93,15 @@
   <div class="field"><label>用户名</label><input id="authUser" /></div>
   <div class="field" style="margin-top:12px"><label>密码</label><input id="authPass" type="password" /></div>
   <button id="authSubmitBtn" style="width:100%; margin-top:20px" onclick="submitAuth()">登录</button>
-  <div id="authMsg" style="color:red; font-size:13px; margin-top:10px; text-align:center"></div>
+  <div id="authMsg" class="msg"></div>
 </div>
 
 <div id="appPage" class="wrap main-app">
   <div class="top-bar">
-    <h1>🔧 管理面板</h1>
-    <button class="ghost" onclick="logout()">退出登录</button>
+    <h1>API & 设备管理</h1>
+    <div class="top-actions">
+      <button class="ghost" onclick="logout()">退出登录</button>
+    </div>
   </div>
 
   <div class="card">
@@ -79,6 +129,16 @@
     <div class="row"><button onclick="saveDev()">保存</button></div>
     <div id="devListWrap"></div>
   </div>
+
+  <div class="card">
+    <h2>③ 修改密码</h2>
+    <div class="row">
+      <div class="field"><label>原密码</label><input id="oldPass" type="password" /></div>
+      <div class="field"><label>新密码</label><input id="newPass" type="password" /></div>
+      <div class="field"><label>确认新密码</label><input id="confirmPass" type="password" /></div>
+    </div>
+    <div class="row"><button onclick="changePassword()">修改密码</button></div>
+  </div>
 </div>
 
 <script>
@@ -97,10 +157,11 @@ async function request(url, method = "GET", body = null) {
   if (r.status === 401) {
     localStorage.removeItem("app_token");
     checkAuth();
-    throw new Error("登录失效，请重新登录");
+    throw new Error("登录失效");
   }
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
 }
 
 function switchTab(mode) {
@@ -114,59 +175,51 @@ function switchTab(mode) {
 async function submitAuth() {
   const username = $("authUser").value.trim();
   const password = $("authPass").value;
-  
   if (!username || !password) {
-    alert("请填写账号和密码");
+    $("authMsg").textContent = "请填写账号和密码";
     return;
   }
-  
+  $("authMsg").textContent = "处理中...";
   try {
     if (authMode === 'register') {
-      alert("1. 正在发送注册请求...");
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username, password: password })
+        body: JSON.stringify({ username, password })
       });
-      
-      alert("2. 服务器回信了，状态码是：" + res.status);
-      const textResult = await res.text();
-      alert("3. 服务器返回的内容：" + textResult);
-      
-      if (!res.ok) return;
-      alert("4. 注册成功！请去登录。");
-      switchTab('login');
-      
-    } else {
-      alert("1. 正在发送登录请求...");
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username, password: password })
-      });
-      
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const textResult = await res.text();
-        alert("登录失败！状态码：" + res.status + "，内容：" + textResult);
+        $("authMsg").textContent = data.error || "注册失败";
         return;
       }
-      
-      const data = await res.json();
-      if (data.token) {
-        localStorage.setItem("app_token", data.token);
-        alert("登录成功！");
-        checkAuth();
-      } else {
-        alert("登录失败，没有凭证：" + JSON.stringify(data));
-      }
+      $("authMsg").textContent = "注册成功，请登录";
+      switchTab('login');
+      return;
     }
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      $("authMsg").textContent = data.error || "登录失败";
+      return;
+    }
+    if (!data.token) {
+      $("authMsg").textContent = "登录失败，未返回凭证";
+      return;
+    }
+    localStorage.setItem("app_token", data.token);
+    $("authMsg").textContent = "";
+    checkAuth();
   } catch (e) {
-    alert("报错了：" + e.message);
+    $("authMsg").textContent = "请求失败：" + e.message;
   }
 }
 
 async function logout() {
-  try { await request("/api/logout", "POST"); } catch(e) {}
+  try { await request("/api/logout", "POST"); } catch (e) {}
   localStorage.removeItem("app_token");
   checkAuth();
 }
@@ -189,16 +242,26 @@ async function refreshAll() {
       request("/api/config"), request("/api/device")
     ]);
     apiList = configs;
-    renderApiList(); fillApiDropdown(); renderDevList(devices);
-  } catch(e) { console.error(e); }
+    renderApiList();
+    fillApiDropdown();
+    renderDevList(devices);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+    "&": "&", "<": "<", ">": ">", '"': """, "'": "'"
+  })[c]);
 }
 
 function renderApiList() {
   const wrap = $("apiListWrap");
   if (!apiList.length) { wrap.innerHTML = '<div class="empty">暂无数据</div>'; return; }
-  let html = `<table><thead><tr><th>ID</th><th>名字</th><th>地址</th><th>模型</th><th>操作</th></tr></thead><tbody>`;
+  let html = '<table><thead><tr><th>ID</th><th>名字</th><th>地址</th><th>模型</th><th>操作</th></tr></thead><tbody>';
   for (const c of apiList) {
-    html += `<tr><td>${c.id}</td><td>${c.name}</td><td class="mono">${c.url}</td><td>${c.model}</td>
+    html += `<tr><td>${c.id}</td><td>${esc(c.name)}</td><td class="mono">${esc(c.url)}</td><td>${esc(c.model)}</td>
       <td><button class="small ghost" onclick="editApi(${c.id})">改</button>
       <button class="small danger" onclick="delApi(${c.id})">删</button></td></tr>`;
   }
@@ -206,63 +269,106 @@ function renderApiList() {
 }
 
 function fillApiDropdown() {
-  $("devConfig").innerHTML = '<option value="">— 未绑定 —</option>' + 
-    apiList.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+  $("devConfig").innerHTML = '<option value="">— 未绑定 —</option>' +
+    apiList.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
 }
 
 function renderDevList(devices) {
   const wrap = $("devListWrap");
   if (!devices.length) { wrap.innerHTML = '<div class="empty">暂无设备</div>'; return; }
-  let html = `<table><thead><tr><th>SN</th><th>备注</th><th>绑定 API</th><th>操作</th></tr></thead><tbody>`;
+  let html = '<table><thead><tr><th>SN</th><th>备注</th><th>绑定 API</th><th>操作</th></tr></thead><tbody>';
   for (const d of devices) {
-    html += `<tr><td class="mono">${d.sn}</td><td>${d.remark}</td><td>${d.config_name || '-'}</td>
-      <td><button class="small ghost" onclick="editDev('${d.sn}','${d.remark}',${d.config_id ?? 'null'})">改</button>
-      <button class="small danger" onclick="delDev('${d.sn}')">删</button></td></tr>`;
+    html += `<tr><td class="mono">${esc(d.sn)}</td><td>${esc(d.remark)}</td><td>${esc(d.config_name || '-')}</td>
+      <td><button class="small ghost" onclick="editDev('${esc(d.sn)}','${esc(d.remark)}',${d.config_id ?? 'null'})">改</button>
+      <button class="small danger" onclick="delDev('${esc(d.sn)}')">删</button></td></tr>`;
   }
   wrap.innerHTML = html + "</tbody></table>";
 }
 
 async function saveApi() {
-  const payload = { name: $("apiName").value.trim(), url: $("apiUrl").value.trim(), key: $("apiKey").value.trim(), model: $("apiModel").value.trim() };
-  if (!payload.name || !payload.url || !payload.model) return alert("必填项不能为空");
+  const payload = {
+    name: $("apiName").value.trim(),
+    url: $("apiUrl").value.trim(),
+    key: $("apiKey").value.trim(),
+    model: $("apiModel").value.trim()
+  };
+  if (!payload.name || !payload.url || !payload.model) { alert("必填项不能为空"); return; }
   if (editingApiId) payload.id = editingApiId;
-  await request("/api/config", "POST", payload);
-  resetApiForm(); refreshAll();
+  try {
+    await request("/api/config", "POST", payload);
+    resetApiForm();
+    refreshAll();
+  } catch (e) { alert(e.message); }
 }
 
 function editApi(id) {
-  const c = apiList.find(x => x.id === id); if (!c) return;
+  const c = apiList.find(x => x.id === id);
+  if (!c) return;
   editingApiId = id;
-  $("apiName").value = c.name; $("apiUrl").value = c.url; $("apiKey").value = c.key || ""; $("apiModel").value = c.model;
-  $("apiSaveBtn").textContent = "更新"; $("apiCancelBtn").style.display = "inline-block";
+  $("apiName").value = c.name;
+  $("apiUrl").value = c.url;
+  $("apiKey").value = c.key || "";
+  $("apiModel").value = c.model;
+  $("apiSaveBtn").textContent = "更新";
+  $("apiCancelBtn").style.display = "inline-block";
 }
 
 function resetApiForm() {
-  editingApiId = null; $("apiName").value = $("apiUrl").value = $("apiKey").value = $("apiModel").value = "";
-  $("apiSaveBtn").textContent = "保存"; $("apiCancelBtn").style.display = "none";
+  editingApiId = null;
+  $("apiName").value = $("apiUrl").value = $("apiKey").value = $("apiModel").value = "";
+  $("apiSaveBtn").textContent = "保存";
+  $("apiCancelBtn").style.display = "none";
 }
 
 async function delApi(id) {
   if (!confirm("确定删除？")) return;
-  await request("/api/config?id=" + id, "DELETE"); refreshAll();
+  try {
+    await request("/api/config?id=" + id, "DELETE");
+    refreshAll();
+  } catch (e) { alert(e.message); }
 }
 
 async function saveDev() {
-  const sn = $("devSn").value.trim(), remark = $("devRemark").value.trim(), config_id = $("devConfig").value || null;
-  if (!sn) return alert("SN 必填");
-  await request("/api/device", "POST", { sn, remark, config_id });
-  $("devSn").value = $("devRemark").value = ""; $("devConfig").value = ""; $("devSn").disabled = false;
-  refreshAll();
+  const sn = $("devSn").value.trim();
+  const remark = $("devRemark").value.trim();
+  const config_id = $("devConfig").value || null;
+  if (!sn) { alert("SN 必填"); return; }
+  try {
+    await request("/api/device", "POST", { sn, remark, config_id });
+    $("devSn").value = $("devRemark").value = "";
+    $("devConfig").value = "";
+    $("devSn").disabled = false;
+    refreshAll();
+  } catch (e) { alert(e.message); }
 }
 
 function editDev(sn, remark, config_id) {
-  $("devSn").value = sn; $("devSn").disabled = true;
-  $("devRemark").value = remark || ""; $("devConfig").value = config_id || "";
+  $("devSn").value = sn;
+  $("devSn").disabled = true;
+  $("devRemark").value = remark || "";
+  $("devConfig").value = config_id || "";
 }
 
 async function delDev(sn) {
   if (!confirm("确定删除？")) return;
-  await request("/api/device?sn=" + sn, "DELETE"); refreshAll();
+  try {
+    await request("/api/device?sn=" + encodeURIComponent(sn), "DELETE");
+    refreshAll();
+  } catch (e) { alert(e.message); }
+}
+
+async function changePassword() {
+  const old_password = $("oldPass").value;
+  const new_password = $("newPass").value;
+  const confirm_password = $("confirmPass").value;
+  if (!old_password || !new_password) { alert("请填写原密码和新密码"); return; }
+  if (new_password !== confirm_password) { alert("两次新密码不一致"); return; }
+  try {
+    const data = await request("/api/password", "POST", { old_password, new_password });
+    alert(data.message || "密码已修改，请重新登录");
+    $("oldPass").value = $("newPass").value = $("confirmPass").value = "";
+    logout();
+  } catch (e) { alert(e.message); }
 }
 
 checkAuth();
