@@ -437,23 +437,37 @@ function openConfig(id){
     var models=(res[2]&&res[2].modelList)||[];
     var voices=extractVoices(res[1]);
     var langOpts='';
-    var langSet={}; voices.forEach(function(v){ langSet[v.lang]=1; });
+    var langSet={}; voices.forEach(function(v){ if(v.lang) langSet[v.lang]=1; });
     Object.keys(langSet).forEach(function(l){ langOpts+='<option value="'+esc(l)+'">'+esc(l)+'</option>'; });
     var voiceOpts=voices.map(function(v){return '<option value="'+esc(v.id)+'">'+esc(v.name)+' ('+esc(v.lang)+')</option>';}).join('');
-    var modelOpts=models.map(function(m){var mid=m.model_id||m.id||m.model_code||m.name;return '<option value="'+esc(mid)+'">'+esc(m.name||m.model_name||mid)+'</option>';}).join('');
+    var modelOpts='';
+    models.forEach(function(m){
+      var mn=m.name||m.model_name||m.display_name||'';
+      if(!mn) return;
+      modelOpts+='<option value="'+esc(mn)+'">'+esc(m.description||mn)+'</option>';
+    });
     var curLang=agent.language||(voices[0]&&voices[0].lang)||'';
     var curVoice=agent.tts_voice||'';
     var curModel=agent.llm_model||'';
+    var curAsr=agent.asr_speed||'normal';
+    var curSpeed=agent.tts_speech_speed||'normal';
+    var curPitch=Number(agent.tts_pitch)||0;
+    function speedOpts(cur){
+      return [['slow','慢'],['normal','正常'],['fast','快']].map(function(p){
+        return '<option value="'+p[0]+'"'+(cur===p[0]?' selected':'')+'>'+p[1]+'</option>';
+      }).join('');
+    }
     var body=''
       +'<div class="field"><label>语言模型</label><select id="cModel"><option value="">默认</option>'+modelOpts+'</select></div>'
       +'<div class="field"><label>语言</label><select id="cLang" onchange="filterVoices()">'+langOpts+'</select></div>'
       +'<div class="field"><label>音色</label><select id="cVoice"><option value="">默认</option>'+voiceOpts+'</select></div>'
       +'<div class="field"><label>角色设定(提示词)</label><textarea id="cChar" placeholder="描述智能体的性格、身份、说话风格...">'+esc(agent.character||'')+'</textarea></div>'
       +'<div class="row">'
-      +'<div class="field"><label>语速</label><input id="cSpeed" type="number" step="0.1" value="'+esc(agent.tts_speech_speed||1)+'" /></div>'
-      +'<div class="field"><label>音调</label><input id="cPitch" type="number" step="0.1" value="'+esc(agent.tts_pitch||1)+'" /></div>'
+      +'<div class="field"><label>识别速度</label><select id="cAsr">'+speedOpts(curAsr)+'</select></div>'
+      +'<div class="field"><label>语速</label><select id="cSpeed">'+speedOpts(curSpeed)+'</select></div>'
       +'</div>'
-      +'<div class="field"><label>记忆</label><select id="cMem"><option value="OFF">关闭</option><option value="LOCAL">开启</option></select></div>';
+      +'<div class="field"><label>音调(-3 到 3)</label><input id="cPitch" type="number" min="-3" max="3" step="1" value="'+curPitch+'" /></div>'
+      +'<div class="field"><label>记忆</label><select id="cMem"><option value="OFF">关闭</option><option value="SHORT_TERM">短期记忆</option><option value="LONG_TERM">长期记忆</option></select></div>';
     cfgResources={voices:voices,agent:agent};
     $('modalTitle').textContent='智能体配置';
     $('modalBody').innerHTML=body;
@@ -461,17 +475,24 @@ function openConfig(id){
     if(curLang) $('cLang').value=curLang;
     filterVoices();
     if(curVoice) $('cVoice').value=curVoice;
-    if((agent.memory_type||'OFF')!=='OFF') $('cMem').value='LOCAL';
+    var mt=agent.memory_type||'OFF';
+    if(mt==='SHORT_TERM'||mt==='LONG_TERM') $('cMem').value=mt;
     $('modalOk').disabled=false;
     modalAction=function(){
+      var pitch=Number($('cPitch').value);
+      if(isNaN(pitch)||pitch< -3||pitch>3) pitch=0;
       var payload={
         language:$('cLang').value,
         tts_voice:$('cVoice').value,
         character:$('cChar').value.trim()||null,
-        tts_speech_speed:Number($('cSpeed').value)||1,
-        tts_pitch:Number($('cPitch').value)||1,
+        asr_speed:$('cAsr').value,
+        tts_speech_speed:$('cSpeed').value,
+        tts_pitch:pitch,
         llm_model:$('cModel').value,
-        memory_type:$('cMem').value
+        memory_type:$('cMem').value,
+        teen_mode:false,
+        mcp_endpoints:[],
+        knowledge_base_ids:[]
       };
       $('modalOk').disabled=true;
       api('/agents/'+encodeURIComponent(id)+'/config','POST',payload).then(function(){ closeModal(); toast('配置已保存'); })
