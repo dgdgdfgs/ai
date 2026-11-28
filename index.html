@@ -5,24 +5,258 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AI 控制台</title>
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fff; }
-  iframe { display: block; width: 100%; height: 100%; border: 0; }
-  .topbar {
-    position: fixed; top: 0; left: 0; right: 0; height: 57px;
-    background: #fff; border-bottom: 1px solid #e5e7eb;
-    display: flex; align-items: center; padding: 0 20px;
-    font: 600 16px system-ui, -apple-system, "Segoe UI", sans-serif;
-    color: #1a56db; z-index: 9999;
-  }
-  .bottom-cover {
-    position: fixed; left: 0; right: 0; bottom: 0; height: 135px;
-    background: #f8fafb; z-index: 9999; pointer-events: none;
-  }
+:root{--blue:#1a56db;--blue-d:#1646b8;--black:#111827;--white:#fff;--line:#e5e7eb;--muted:#6b7280;--bg:#f5f6f8;--red:#dc2626}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--black);font-size:14px}
+.auth-card{max-width:380px;margin:9vh auto;background:var(--white);border:1px solid var(--line);padding:32px}
+.auth-card h2{text-align:center;margin:0 0 24px;font-size:20px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
+.field label{font-size:12px;color:var(--muted)}
+input,select{width:100%;padding:10px;border:1px solid var(--line);background:var(--white);color:var(--black);font-size:14px;outline:none;border-radius:0;transition:border-color .18s}
+input:focus,select:focus{border-color:var(--blue)}
+.cap-row{display:flex;gap:10px;align-items:stretch}
+.cap-row input{flex:1}
+.cap-box{width:130px;height:42px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:#eee}
+.cap-box svg{height:100%;width:100%}
+button{padding:10px 18px;border:1px solid var(--blue);background:var(--blue);color:var(--white);cursor:pointer;font-size:14px;transition:background .18s,border-color .18s}
+button:hover{background:var(--blue-d);border-color:var(--blue-d)}
+button:disabled{opacity:.6;cursor:not-allowed}
+button.block{width:100%;margin-top:6px}
+button.ghost{background:var(--white);color:var(--black);border-color:var(--line)}
+button.ghost:hover{color:var(--blue);border-color:var(--blue);background:var(--white)}
+button.danger{background:var(--white);color:var(--black);border-color:var(--line)}
+button.danger:hover{background:var(--black);border-color:var(--black);color:var(--white)}
+button.small{padding:5px 10px;font-size:12px}
+.msg{font-size:13px;min-height:18px;margin-top:10px;text-align:center;color:var(--red)}
+.app{display:none;max-width:1080px;margin:0 auto;padding:20px}
+.topbar{display:flex;justify-content:space-between;align-items:center;background:var(--white);border:1px solid var(--line);padding:14px 20px;margin-bottom:20px}
+.topbar h1{margin:0;font-size:18px;color:var(--blue)}
+.topbar .right{display:flex;align-items:center;gap:12px}
+.topbar .user{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+.tabs div{padding:10px 20px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;transition:color .18s,border-color .18s}
+.tabs div.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+.panel{display:none;background:var(--white);border:1px solid var(--line);padding:20px}
+.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel h2{font-size:15px;margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px}
+.row .field{margin-bottom:0;flex:1 1 180px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.empty{color:var(--muted);padding:14px 0;text-align:center}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 18px;font-size:13px;z-index:99;display:none;max-width:90vw}
+.tag{display:inline-block;padding:2px 8px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.loading{color:var(--muted);padding:14px 0;text-align:center}
 </style>
 </head>
 <body>
-<div class="topbar">AI 控制台</div>
-<div class="bottom-cover"></div>
-<iframe src="https://xiaozhi.me/console/" allow="clipboard-read; clipboard-write; microphone; camera" allowfullscreen></iframe>
+
+<div id="authPage" class="auth-card">
+  <h2>AI 控制台</h2>
+  <div class="field"><label>用户名</label><input id="username" autocomplete="username" /></div>
+  <div class="field"><label>密码</label><input id="password" type="password" autocomplete="current-password" /></div>
+  <div class="field"><label>验证码</label>
+    <div class="cap-row">
+      <input id="captcha" maxlength="8" placeholder="输入右侧字符" />
+      <div class="cap-box" id="capBox" title="点击刷新"></div>
+    </div>
+  </div>
+  <button id="loginBtn" class="block" onclick="doLogin()">登录</button>
+  <div id="authMsg" class="msg"></div>
+</div>
+
+<div id="appPage" class="app">
+  <div class="topbar">
+    <h1>AI 控制台</h1>
+    <div class="right">
+      <span class="user" id="who"></span>
+      <button class="ghost small" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div id="tabAgent" class="active" onclick="switchPanel('agent')">智能体</div>
+    <div id="tabDevice" onclick="switchPanel('device')">设备管理</div>
+    <div id="tabVoice" onclick="switchPanel('voice')">音色管理</div>
+  </div>
+
+  <div id="panelAgent" class="panel active">
+    <h2>智能体列表</h2>
+    <div id="agentList"><div class="loading">加载中...</div></div>
+  </div>
+
+  <div id="panelDevice" class="panel">
+    <h2>设备绑定</h2>
+    <div class="row">
+      <div class="field"><label>选择智能体</label><select id="agentSel" onchange="loadDevices()"></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>设备验证码(板子屏幕显示的 6 位码)</label><input id="devCode" placeholder="输入板子屏幕上显示的验证码" /></div>
+      <button onclick="bindDevice()">绑定设备</button>
+    </div>
+    <div class="row"><button class="ghost" onclick="loadDevices()">刷新列表</button></div>
+    <div id="devList"><div class="empty">请先选择智能体</div></div>
+  </div>
+
+  <div id="panelVoice" class="panel">
+    <h2>音色列表</h2>
+    <div class="row"><button onclick="loadVoices()">加载音色</button></div>
+    <div id="voiceList"><div class="empty">点击"加载音色"查看可用音色</div></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+var API_BASE = '/api';
+var TOKEN_KEY = 'ai_console_token';
+var $ = function(id){ return document.getElementById(id); };
+var captchaId = '';
+
+function toast(msg){
+  var t=$('toast'); t.textContent=msg; t.style.display='block';
+  clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2600);
+}
+function getToken(){ var raw=localStorage.getItem(TOKEN_KEY); if(!raw) return ''; try{return JSON.parse(raw).token||'';}catch(e){return '';} }
+
+function api(path, method, body, skipAuth){
+  var headers={'Content-Type':'application/json'};
+  if(!skipAuth && getToken()) headers['Authorization']='Bearer '+getToken();
+  var opt={method:method||'GET',headers:headers};
+  if(body!==undefined && body!==null) opt.body=JSON.stringify(body);
+  return fetch(API_BASE+path,opt).then(function(r){return r.json().catch(function(){return {success:false,message:'HTTP '+r.status};});})
+    .then(function(res){
+      if(res.success===false){
+        if(/token|登录|unauthor|expired/i.test(res.message||'')){ localStorage.removeItem(TOKEN_KEY); showAuth(); }
+        throw new Error(res.message||'请求失败');
+      }
+      return res.data;
+    });
+}
+
+function loadCaptcha(){
+  fetch(API_BASE+'/auth/captcha?format=json',{cache:'no-store'}).then(function(r){return r.json();})
+    .then(function(res){
+      if(!res.success) throw new Error(res.message||'验证码加载失败');
+      captchaId=res.data.captcha_id;
+      $('capBox').innerHTML=res.data.svg;
+    })
+    .catch(function(e){ $('capBox').textContent='点击刷新'; $('authMsg').textContent='验证码加载失败,点击重试'; });
+}
+$('capBox').onclick=loadCaptcha;
+
+function doLogin(){
+  var u=$('username').value.trim(),p=$('password').value,c=$('captcha').value.trim();
+  if(!u||!p||!c){ $('authMsg').textContent='请填写用户名、密码和验证码'; return; }
+  $('loginBtn').disabled=true; $('authMsg').textContent='登录中...';
+  api('/auth/login','POST',{username:u,password:p,captcha_code:c,captcha_id:captchaId},true)
+    .then(function(data){
+      var token=data.token||data.access_token||(data.user&&data.user.token);
+      if(!token) throw new Error('登录未返回凭证');
+      localStorage.setItem(TOKEN_KEY,JSON.stringify({token:token}));
+      $('authMsg').textContent=''; $('password').value=''; $('captcha').value='';
+      showApp();
+    })
+    .catch(function(e){ $('authMsg').textContent=e.message; $('loginBtn').disabled=false; loadCaptcha(); });
+}
+
+function doLogout(){
+  api('/auth/logout','POST',{},false).catch(function(){});
+  localStorage.removeItem(TOKEN_KEY); showAuth();
+}
+
+function showAuth(){
+  $('appPage').style.display='none'; $('authPage').style.display='block';
+  $('loginBtn').disabled=false; loadCaptcha();
+}
+function showApp(){
+  $('authPage').style.display='none'; $('appPage').style.display='block';
+  api('/auth/me').then(function(me){ $('who').textContent=(me&&(me.username||me.nickname||me.phone))||'已登录'; }).catch(function(){});
+  loadAgents();
+}
+
+function switchPanel(name){
+  ['agent','device','voice'].forEach(function(n){
+    $('panel'+cap(n)).classList.toggle('active',n===name);
+    $('tab'+cap(n)).classList.toggle('active',n===name);
+  });
+  if(name==='voice' && !$('voiceList')._loaded) loadVoices();
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+var agents=[];
+function loadAgents(){
+  $('agentList').innerHTML='<div class="loading">加载中...</div>';
+  api('/agents').then(function(data){
+    var list=Array.isArray(data)?data:(data&&(data.agents||data.list||data.items))||[];
+    agents=list;
+    if(!list.length){ $('agentList').innerHTML='<div class="empty">暂无智能体</div>'; fillAgentSel(); return; }
+    var h='<table><thead><tr><th>名称</th><th>ID</th><th>操作</th></tr></thead><tbody>';
+    list.forEach(function(a){
+      h+='<tr><td>'+esc(a.name||a.agent_name||'未命名')+'</td><td class="mono">'+esc(a.id||a.agent_id||'')+'</td>'
+        +'<td><button class="small ghost" onclick="goDevices('+esc(a.id||a.agent_id)+')">管理设备</button></td></tr>';
+    });
+    $('agentList').innerHTML=h+'</tbody></table>';
+    fillAgentSel();
+  }).catch(function(e){ $('agentList').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
+}
+function fillAgentSel(){
+  $('agentSel').innerHTML=agents.map(function(a){return '<option value="'+esc(a.id||a.agent_id)+'">'+esc(a.name||a.agent_name||'未命名')+'</option>';}).join('')||'<option value="">暂无智能体</option>';
+  if(agents.length) loadDevices();
+}
+function goDevices(id){ $('agentSel').value=id; switchPanel('device'); loadDevices(); }
+
+function loadDevices(){
+  var aid=$('agentSel').value;
+  if(!aid){ $('devList').innerHTML='<div class="empty">请先创建智能体</div>'; return; }
+  $('devList').innerHTML='<div class="loading">加载中...</div>';
+  api('/agents/'+encodeURIComponent(aid)+'/devices').then(function(data){
+    var list=Array.isArray(data)?data:(data&&(data.devices||data.list||data.items))||[];
+    if(!list.length){ $('devList').innerHTML='<div class="empty">暂无绑定设备</div>'; return; }
+    var h='<table><thead><tr><th>设备MAC/ID</th><th>别名</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+    list.forEach(function(d){
+      var mac=d.mac_address||d.macAddress||d.mac||d.device_id||d.id||'';
+      var alias=d.alias||d.name||d.remark||'';
+      h+='<tr><td class="mono">'+esc(mac)+'</td><td>'+esc(alias)+'</td>'
+        +'<td>'+(d.online?'<span class="tag">在线</span>':'<span class="tag">-</span>')+'</td>'
+        +'<td><button class="small danger" onclick="unbindDev('+esc(aid)+',\''+esc(d.id||d.device_id||mac)+'\')">解绑</button></td></tr>';
+    });
+    $('devList').innerHTML=h+'</tbody></table>';
+  }).catch(function(e){ $('devList').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
+}
+function bindDevice(){
+  var code=$('devCode').value.trim(), aid=$('agentSel').value;
+  if(!code){ toast('请输入设备验证码'); return; }
+  if(!aid){ toast('请先选择智能体'); return; }
+  api('/agents/'+encodeURIComponent(aid)+'/devices','POST',{verificationCode:code})
+    .then(function(){ $('devCode').value=''; toast('绑定成功'); loadDevices(); })
+    .catch(function(e){ toast(e.message); });
+}
+function unbindDev(aid,deviceId){
+  if(!confirm('确定解绑该设备?')) return;
+  api('/agents/'+encodeURIComponent(aid)+'/devices/delete','POST',{deviceId:deviceId})
+    .then(function(){ toast('已解绑'); loadDevices(); })
+    .catch(function(e){ toast(e.message); });
+}
+
+function loadVoices(){
+  $('voiceList')._loaded=true;
+  $('voiceList').innerHTML='<div class="loading">加载中...</div>';
+  api('/roles/tts-list').then(function(data){
+    var ttsList=(data&&data.ttsList)||[];
+    var rows=[];
+    ttsList.forEach(function(g){ if(g.languages) Object.keys(g.languages).forEach(function(lang){ (g.languages[lang]||[]).forEach(function(v){ rows.push({name:v.name||v.voice_id||'',code:v.voice_id||v.voice||'',lang:lang}); }); }); });
+    if(!rows.length){ $('voiceList').innerHTML='<div class="empty">暂无音色数据</div>'; return; }
+    var h='<table><thead><tr><th>音色名称</th><th>音色代码</th><th>语言</th></tr></thead><tbody>';
+    rows.forEach(function(v){ h+='<tr><td>'+esc(v.name)+'</td><td class="mono">'+esc(v.code)+'</td><td>'+esc(v.lang)+'</td></tr>'; });
+    $('voiceList').innerHTML=h+'</tbody></table>';
+  }).catch(function(e){ $('voiceList').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
+}
+
+if(getToken()){ showApp(); } else { showAuth(); }
+</script>
 </body>
 </html>
