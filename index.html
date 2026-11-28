@@ -4,7 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
 <title>AI 控制台</title>
-<script>location.replace('/console/');</script>
+<script>
+if (location.pathname === '/' || location.pathname === '/index.html') {
+  location.replace('/console/');
+} else {
+  document.body.textContent = '代理未生效：请在 Cloudflare Pages 中确认 functions/[[path]].js 已部署。';
+}
+</script>
 </head>
 <body>正在加载 AI 控制台...</body>
 </html>
