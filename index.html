@@ -533,49 +533,6 @@ function unbindDev(aid,deviceId){
     .catch(function(e){ toast(e.message); });
 }
 
-var API_KEY='xz_custom_apis';
-function getApis(){ try{ return JSON.parse(localStorage.getItem(API_KEY)||'[]'); }catch(e){ return []; } }
-function saveApis(a){ localStorage.setItem(API_KEY,JSON.stringify(a)); }
-function renderApi(){
-  var list=getApis();
-  if(!list.length){ $('apiList').innerHTML='<div class="empty">暂无自定义 API,点右上角添加</div>'; return; }
-  var h='<div class="tbl-wrap"><table class="fixed"><thead><tr><th style="width:20%">名称</th><th style="width:32%">端点</th><th style="width:20%">模型</th><th style="width:28%">操作</th></tr></thead><tbody>';
-  list.forEach(function(x,i){
-    h+='<tr><td>'+esc(x.name)+'</td><td class="mono">'+esc(x.base||'')+'</td><td>'+esc(x.model||'')+'</td>'
-      +'<td><div class="act">'
-      +'<button class="small ghost" onclick="openApiEdit('+i+')">编辑</button>'
-      +'<button class="small danger" onclick="delApi('+i+')">删除</button>'
-      +'</div></td></tr>';
-  });
-  $('apiList').innerHTML=h+'</tbody></table></div>';
-}
-function apiForm(x){
-  x=x||{};
-  return '<div class="field"><label>名称</label><input id="aName" value="'+esc(x.name||'')+'" placeholder="给我个名字" /></div>'
-    +'<div class="field"><label>API 端点(Base URL)</label><input id="aBase" value="'+esc(x.base||'')+'" placeholder="https://api.example.com/v1" /></div>'
-    +'<div class="field"><label>API Key</label><input id="aKey" value="'+esc(x.key||'')+'" placeholder="sk-..." /></div>'
-    +'<div class="field"><label>模型名</label><input id="aModel" value="'+esc(x.model||'')+'" placeholder="模型标识" /></div>';
-}
-function openApiAdd(){
-  openModal('添加自定义 API',apiForm(),'保存',function(){
-    var list=getApis();
-    list.push({name:$('aName').value.trim(),base:$('aBase').value.trim(),key:$('aKey').value.trim(),model:$('aModel').value.trim()});
-    saveApis(list); closeModal(); renderApi(); toast('已添加');
-  });
-}
-function openApiEdit(i){
-  var x=getApis()[i];
-  openModal('编辑自定义 API',apiForm(x),'保存',function(){
-    var list=getApis();
-    list[i]={name:$('aName').value.trim(),base:$('aBase').value.trim(),key:$('aKey').value.trim(),model:$('aModel').value.trim()};
-    saveApis(list); closeModal(); renderApi(); toast('已保存');
-  });
-}
-function delApi(i){
-  if(!confirm('确定删除?')) return;
-  var list=getApis(); list.splice(i,1); saveApis(list); renderApi(); toast('已删除');
-}
-
 if(getToken()){ showApp(); } else { switchAuth('sms'); showAuth(); }
 </script>
 </body>
