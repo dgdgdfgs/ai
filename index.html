@@ -143,8 +143,6 @@ textarea:focus{border-color:var(--blue)}
   <div class="tabs">
     <div id="tabAgent" class="active" onclick="switchPanel('agent')">智能体</div>
     <div id="tabDevice" onclick="switchPanel('device')">设备管理</div>
-    <div id="tabVoice" onclick="switchPanel('voice')">音色管理</div>
-    <div id="tabGithub" onclick="switchPanel('github')">GitHub认证</div>
     <div id="tabApi" onclick="switchPanel('api')">自定义API</div>
   </div>
 
@@ -167,21 +165,9 @@ textarea:focus{border-color:var(--blue)}
     <div id="devList"><div class="empty">请先选择智能体</div></div>
   </div>
 
-  <div id="panelVoice" class="panel">
-    <h2>音色列表</h2>
-    <div class="row"><button onclick="loadVoices()">加载音色</button></div>
-    <div id="voiceList"><div class="empty">点击"加载音色"查看可用音色</div></div>
-  </div>
-
-  <div id="panelGithub" class="panel">
-    <h2>GitHub 认证</h2>
-    <div id="githubBox"><div class="loading">加载中...</div></div>
-    <p class="tip">完成 GitHub 认证后,账号可免费使用更多大模型。授权会跳转到 GitHub,完成后回到本站点"刷新状态"即可(认证状态绑在账号上,跟着登录走)。</p>
-  </div>
-
   <div id="panelApi" class="panel">
     <h2>自定义 API 配置 <button class="small btn-new" onclick="openApiAdd()">+ 添加</button></h2>
-    <p class="tip">在这里记录你自己的模型 API(端点/密钥/模型名)。账号凭证由官方服务器保存,此处仅作本地记录,方便集中管理。</p>
+    <p class="tip">在这里配置你自己的模型 API(端点/密钥/模型名),数据保存在本浏览器,方便集中管理。</p>
     <div id="apiList"><div class="empty">暂无自定义 API</div></div>
   </div>
 </div>
@@ -334,12 +320,10 @@ function showApp(){
 }
 
 function switchPanel(name){
-  ['agent','device','voice','github','api'].forEach(function(n){
+  ['agent','device','api'].forEach(function(n){
     $('panel'+cap(n)).classList.toggle('active',n===name);
     $('tab'+cap(n)).classList.toggle('active',n===name);
   });
-  if(name==='voice' && !$('voiceList')._loaded) loadVoices();
-  if(name==='github') loadGithub();
   if(name==='api') renderApi();
 }
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
@@ -394,7 +378,7 @@ function loadAgents(){
       h+='<tr><td>'+esc(a.name||a.agent_name||'未命名')+'</td><td class="mono">'+esc(id)+'</td>'
         +'<td><div class="act">'
         +'<button class="small ghost" onclick="openConfig('+esc(id)+')">配置</button>'
-        +'<button class="small ghost" onclick="openRename('+esc(id)+','+JSON.stringify(a.name||a.agent_name||'').replace(/'/g,"&#39;")+')">改名</button>'
+        +'<button class="small ghost" onclick="openRename('+esc(id)+')">改名</button>'
         +'<button class="small ghost" onclick="goDevices('+esc(id)+')">设备</button>'
         +'<button class="small danger" onclick="delAgent('+esc(id)+')">删除</button>'
         +'</div></td></tr>';
@@ -426,9 +410,11 @@ function openCreate(){
         .catch(function(e){ toast(e.message); $('modalOk').disabled=false; });
     });
 }
-function openRename(id,name){
+function openRename(id){
+  var cur='';
+  for(var i=0;i<agents.length;i++){ var a=agents[i]; if(String(a.id||a.agent_id)===String(id)){ cur=a.name||a.agent_name||''; break; } }
   openModal('重命名智能体',
-    '<div class="field"><label>新名称</label><input id="mName" value="'+esc(name)+'" /></div>',
+    '<div class="field"><label>新名称</label><input id="mName" value="'+esc(cur)+'" /></div>',
     '保存', function(){
       var n=$('mName').value.trim();
       if(!n){ toast('请输入名称'); return; }
@@ -562,71 +548,6 @@ function unbindDev(aid,deviceId){
   api('/agents/'+encodeURIComponent(aid)+'/devices/delete','POST',{deviceId:deviceId})
     .then(function(){ toast('已解绑'); loadDevices(); })
     .catch(function(e){ toast(e.message); });
-}
-
-function loadVoices(){
-  $('voiceList')._loaded=true;
-  $('voiceList').innerHTML='<div class="loading">加载中...</div>';
-  api('/user/tts-list').catch(function(){ return api('/roles/tts-list'); }).then(function(data){
-    var rows=extractVoices(data);
-    if(!rows.length){ $('voiceList').innerHTML='<div class="empty">暂无音色数据</div>'; return; }
-    var h='<table><thead><tr><th>音色名称</th><th>音色代码</th><th>语言</th></tr></thead><tbody>';
-    rows.forEach(function(v){ h+='<tr><td>'+esc(v.name)+'</td><td class="mono">'+esc(v.id)+'</td><td>'+esc(v.lang)+'</td></tr>'; });
-    $('voiceList').innerHTML=h+'</tbody></table>';
-  }).catch(function(e){ $('voiceList').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
-}
-
-var GITHUB_KEY='xz_github_api';
-
-function loadGithub(){
-  var box=$('githubBox');
-  var code=new URLSearchParams(location.search).get('code');
-  if(code){
-    box.innerHTML='<div class="loading">正在完成 GitHub 绑定...</div>';
-    api('/github/callback?code='+encodeURIComponent(code)).then(function(data){
-      var name=(data&&(data.username||data.github_username||(data.user&&data.user.username)))||'';
-      localStorage.setItem(GITHUB_KEY,JSON.stringify({username:name}));
-      history.replaceState({},'',location.pathname);
-      box.innerHTML=githubPanel(name);
-      toast('GitHub 认证成功');
-    }).catch(function(e){ box.innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
-    return;
-  }
-  var cached={}; try{ cached=JSON.parse(localStorage.getItem(GITHUB_KEY)||'{}'); }catch(e){}
-  box.innerHTML='<div class="loading">加载中...</div>';
-  api('/github/info').then(function(info){
-    var name=(info&&(info.username||info.github_username))||'';
-    if(info&&info.certified===false&&!name) name='';
-    localStorage.setItem(GITHUB_KEY,JSON.stringify({username:name}));
-    box.innerHTML=githubPanel(name);
-  }).catch(function(e){
-    box.innerHTML=githubPanel(cached.username||'')+'<div class="empty">状态获取失败: '+esc(e.message)+'</div>';
-  });
-}
-function githubPanel(name){
-  var h='<div class="row" style="align-items:center">'
-    +'<div><div style="font-size:15px;font-weight:600">'+(name?'已认证':'未认证')+'</div>'
-    +(name?'<div class="mono" style="margin-top:4px">'+esc(name)+'</div>':'<div class="tip" style="margin:4px 0 0">尚未绑定 GitHub 账号</div>')+'</div></div>'
-    +'<div class="row">';
-  if(name) h+='<button class="danger small" onclick="doGithubUnbind()">取消认证</button>'
-    +'<button class="ghost small" onclick="loadGithub()">刷新状态</button>';
-  else h+='<button onclick="doGithubBind()">绑定 GitHub</button>'
-    +'<button class="ghost small" onclick="loadGithub()">刷新状态</button>';
-  return h+'</div>';
-}
-function doGithubBind(){
-  $('githubBox').innerHTML='<div class="loading">正在获取授权地址...</div>';
-  api('/github/bind').then(function(data){
-    var url=data&&(data.authUrl||data.url||data.auth_url);
-    if(!url) throw new Error('未获取到授权地址');
-    location.href=url;
-  }).catch(function(e){ $('githubBox').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
-}
-function doGithubUnbind(){
-  if(!confirm('确定取消 GitHub 认证?')) return;
-  api('/github/unbind','POST',{}).then(function(){
-    localStorage.removeItem(GITHUB_KEY); toast('已取消认证'); loadGithub();
-  }).catch(function(e){ toast(e.message); });
 }
 
 var API_KEY='xz_custom_apis';
