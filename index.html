@@ -73,6 +73,7 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);background:var(--w
 textarea:focus{border-color:var(--blue)}
 .search{display:flex;gap:10px;margin-bottom:14px}
 .search input{flex:1}
+.tip{font-size:12px;color:var(--muted);line-height:1.6;margin:12px 0 0}
 </style>
 </head>
 <body>
@@ -143,6 +144,8 @@ textarea:focus{border-color:var(--blue)}
     <div id="tabAgent" class="active" onclick="switchPanel('agent')">智能体</div>
     <div id="tabDevice" onclick="switchPanel('device')">设备管理</div>
     <div id="tabVoice" onclick="switchPanel('voice')">音色管理</div>
+    <div id="tabGithub" onclick="switchPanel('github')">GitHub认证</div>
+    <div id="tabApi" onclick="switchPanel('api')">自定义API</div>
   </div>
 
   <div id="panelAgent" class="panel active">
@@ -168,6 +171,18 @@ textarea:focus{border-color:var(--blue)}
     <h2>音色列表</h2>
     <div class="row"><button onclick="loadVoices()">加载音色</button></div>
     <div id="voiceList"><div class="empty">点击"加载音色"查看可用音色</div></div>
+  </div>
+
+  <div id="panelGithub" class="panel">
+    <h2>GitHub 认证</h2>
+    <div id="githubBox"><div class="loading">加载中...</div></div>
+    <p class="tip">完成 GitHub 认证后,账号可免费使用更多大模型。授权会跳转到 GitHub,完成后回到本站点"刷新状态"即可(认证状态绑在账号上,跟着登录走)。</p>
+  </div>
+
+  <div id="panelApi" class="panel">
+    <h2>自定义 API 配置 <button class="small btn-new" onclick="openApiAdd()">+ 添加</button></h2>
+    <p class="tip">在这里记录你自己的模型 API(端点/密钥/模型名)。账号凭证由官方服务器保存,此处仅作本地记录,方便集中管理。</p>
+    <div id="apiList"><div class="empty">暂无自定义 API</div></div>
   </div>
 </div>
 
@@ -319,11 +334,13 @@ function showApp(){
 }
 
 function switchPanel(name){
-  ['agent','device','voice'].forEach(function(n){
+  ['agent','device','voice','github','api'].forEach(function(n){
     $('panel'+cap(n)).classList.toggle('active',n===name);
     $('tab'+cap(n)).classList.toggle('active',n===name);
   });
   if(name==='voice' && !$('voiceList')._loaded) loadVoices();
+  if(name==='github') loadGithub();
+  if(name==='api') renderApi();
 }
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -557,6 +574,102 @@ function loadVoices(){
     rows.forEach(function(v){ h+='<tr><td>'+esc(v.name)+'</td><td class="mono">'+esc(v.id)+'</td><td>'+esc(v.lang)+'</td></tr>'; });
     $('voiceList').innerHTML=h+'</tbody></table>';
   }).catch(function(e){ $('voiceList').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
+}
+
+var GITHUB_KEY='xz_github_api';
+
+function loadGithub(){
+  var box=$('githubBox');
+  var code=new URLSearchParams(location.search).get('code');
+  if(code){
+    box.innerHTML='<div class="loading">正在完成 GitHub 绑定...</div>';
+    api('/github/callback?code='+encodeURIComponent(code)).then(function(data){
+      var name=(data&&(data.username||data.github_username||(data.user&&data.user.username)))||'';
+      localStorage.setItem(GITHUB_KEY,JSON.stringify({username:name}));
+      history.replaceState({},'',location.pathname);
+      box.innerHTML=githubPanel(name);
+      toast('GitHub 认证成功');
+    }).catch(function(e){ box.innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
+    return;
+  }
+  var cached={}; try{ cached=JSON.parse(localStorage.getItem(GITHUB_KEY)||'{}'); }catch(e){}
+  box.innerHTML='<div class="loading">加载中...</div>';
+  api('/github/info').then(function(info){
+    var name=(info&&(info.username||info.github_username))||'';
+    if(info&&info.certified===false&&!name) name='';
+    localStorage.setItem(GITHUB_KEY,JSON.stringify({username:name}));
+    box.innerHTML=githubPanel(name);
+  }).catch(function(e){
+    box.innerHTML=githubPanel(cached.username||'')+'<div class="empty">状态获取失败: '+esc(e.message)+'</div>';
+  });
+}
+function githubPanel(name){
+  var h='<div class="row" style="align-items:center">'
+    +'<div><div style="font-size:15px;font-weight:600">'+(name?'已认证':'未认证')+'</div>'
+    +(name?'<div class="mono" style="margin-top:4px">'+esc(name)+'</div>':'<div class="tip" style="margin:4px 0 0">尚未绑定 GitHub 账号</div>')+'</div></div>'
+    +'<div class="row">';
+  if(name) h+='<button class="danger small" onclick="doGithubUnbind()">取消认证</button>'
+    +'<button class="ghost small" onclick="loadGithub()">刷新状态</button>';
+  else h+='<button onclick="doGithubBind()">绑定 GitHub</button>'
+    +'<button class="ghost small" onclick="loadGithub()">刷新状态</button>';
+  return h+'</div>';
+}
+function doGithubBind(){
+  $('githubBox').innerHTML='<div class="loading">正在获取授权地址...</div>';
+  api('/github/bind').then(function(data){
+    var url=data&&(data.authUrl||data.url||data.auth_url);
+    if(!url) throw new Error('未获取到授权地址');
+    location.href=url;
+  }).catch(function(e){ $('githubBox').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; });
+}
+function doGithubUnbind(){
+  if(!confirm('确定取消 GitHub 认证?')) return;
+  api('/github/unbind','POST',{}).then(function(){
+    localStorage.removeItem(GITHUB_KEY); toast('已取消认证'); loadGithub();
+  }).catch(function(e){ toast(e.message); });
+}
+
+var API_KEY='xz_custom_apis';
+function getApis(){ try{ return JSON.parse(localStorage.getItem(API_KEY)||'[]'); }catch(e){ return []; } }
+function saveApis(a){ localStorage.setItem(API_KEY,JSON.stringify(a)); }
+function renderApi(){
+  var list=getApis();
+  if(!list.length){ $('apiList').innerHTML='<div class="empty">暂无自定义 API,点右上角添加</div>'; return; }
+  var h='<table><thead><tr><th>名称</th><th>端点</th><th>模型</th><th>操作</th></tr></thead><tbody>';
+  list.forEach(function(x,i){
+    h+='<tr><td>'+esc(x.name)+'</td><td class="mono">'+esc(x.base||'')+'</td><td>'+esc(x.model||'')+'</td>'
+      +'<td><div class="act">'
+      +'<button class="small ghost" onclick="openApiEdit('+i+')">编辑</button>'
+      +'<button class="small danger" onclick="delApi('+i+')">删除</button>'
+      +'</div></td></tr>';
+  });
+  $('apiList').innerHTML=h+'</tbody></table>';
+}
+function apiForm(x){
+  x=x||{};
+  return '<div class="field"><label>名称</label><input id="aName" value="'+esc(x.name||'')+'" placeholder="给我个名字" /></div>'
+    +'<div class="field"><label>API 端点(Base URL)</label><input id="aBase" value="'+esc(x.base||'')+'" placeholder="https://api.example.com/v1" /></div>'
+    +'<div class="field"><label>API Key</label><input id="aKey" value="'+esc(x.key||'')+'" placeholder="sk-..." /></div>'
+    +'<div class="field"><label>模型名</label><input id="aModel" value="'+esc(x.model||'')+'" placeholder="模型标识" /></div>';
+}
+function openApiAdd(){
+  openModal('添加自定义 API',apiForm(),'保存',function(){
+    var list=getApis();
+    list.push({name:$('aName').value.trim(),base:$('aBase').value.trim(),key:$('aKey').value.trim(),model:$('aModel').value.trim()});
+    saveApis(list); closeModal(); renderApi(); toast('已添加');
+  });
+}
+function openApiEdit(i){
+  var x=getApis()[i];
+  openModal('编辑自定义 API',apiForm(x),'保存',function(){
+    var list=getApis();
+    list[i]={name:$('aName').value.trim(),base:$('aBase').value.trim(),key:$('aKey').value.trim(),model:$('aModel').value.trim()};
+    saveApis(list); closeModal(); renderApi(); toast('已保存');
+  });
+}
+function delApi(i){
+  if(!confirm('确定删除?')) return;
+  var list=getApis(); list.splice(i,1); saveApis(list); renderApi(); toast('已删除');
 }
 
 if(getToken()){ showApp(); } else { switchAuth('sms'); showAuth(); }
