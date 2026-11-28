@@ -74,6 +74,9 @@ textarea:focus{border-color:var(--blue)}
 .search{display:flex;gap:10px;margin-bottom:14px}
 .search input{flex:1}
 .tip{font-size:12px;color:var(--muted);line-height:1.6;margin:12px 0 0}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.fixed{table-layout:fixed;width:100%}
+table.fixed th,table.fixed td{word-break:break-all;overflow-wrap:anywhere;vertical-align:top}
 </style>
 </head>
 <body>
@@ -167,7 +170,6 @@ textarea:focus{border-color:var(--blue)}
 
   <div id="panelApi" class="panel">
     <h2>自定义 API 配置 <button class="small btn-new" onclick="openApiAdd()">+ 添加</button></h2>
-    <p class="tip">在这里配置你自己的模型 API(端点/密钥/模型名),数据保存在本浏览器,方便集中管理。</p>
     <div id="apiList"><div class="empty">暂无自定义 API</div></div>
   </div>
 </div>
@@ -433,21 +435,20 @@ function openConfig(id){
   openModal('智能体配置','<div class="loading">加载配置中...</div>','保存',function(){});
   Promise.all([
     api('/agents/'+encodeURIComponent(id)),
-    api('/user/tts-list').catch(function(){ return api('/roles/tts-list').catch(function(){return {}; }); }),
-    api('/roles/model-list').catch(function(){return {modelList:[]};})
+    api('/user/tts-list').catch(function(){ return api('/roles/tts-list').catch(function(){return {}; }); })
   ]).then(function(res){
     var agent=(res[0]&&res[0].agent)||res[0]||{};
-    var models=(res[2]&&res[2].modelList)||[];
     var voices=extractVoices(res[1]);
     var langOpts='';
     var langSet={}; voices.forEach(function(v){ if(v.lang) langSet[v.lang]=1; });
     Object.keys(langSet).forEach(function(l){ langOpts+='<option value="'+esc(l)+'">'+esc(l)+'</option>'; });
     var voiceOpts=voices.map(function(v){return '<option value="'+esc(v.id)+'">'+esc(v.name)+' ('+esc(v.lang)+')</option>';}).join('');
     var modelOpts='';
-    models.forEach(function(m){
-      var mn=m.name||m.model_name||m.display_name||'';
-      if(!mn) return;
-      modelOpts+='<option value="'+esc(mn)+'">'+esc(m.description||mn)+'</option>';
+    getApis().forEach(function(x){
+      var label=x.name||x.model||'';
+      var val=x.model||x.base||'';
+      if(!val) return;
+      modelOpts+='<option value="'+esc(val)+'">'+esc(label)+'</option>';
     });
     var curLang=agent.language||(voices[0]&&voices[0].lang)||'';
     var curVoice=agent.tts_voice||'';
@@ -556,7 +557,7 @@ function saveApis(a){ localStorage.setItem(API_KEY,JSON.stringify(a)); }
 function renderApi(){
   var list=getApis();
   if(!list.length){ $('apiList').innerHTML='<div class="empty">暂无自定义 API,点右上角添加</div>'; return; }
-  var h='<table><thead><tr><th>名称</th><th>端点</th><th>模型</th><th>操作</th></tr></thead><tbody>';
+  var h='<div class="tbl-wrap"><table class="fixed"><thead><tr><th style="width:20%">名称</th><th style="width:32%">端点</th><th style="width:20%">模型</th><th style="width:28%">操作</th></tr></thead><tbody>';
   list.forEach(function(x,i){
     h+='<tr><td>'+esc(x.name)+'</td><td class="mono">'+esc(x.base||'')+'</td><td>'+esc(x.model||'')+'</td>'
       +'<td><div class="act">'
@@ -564,7 +565,7 @@ function renderApi(){
       +'<button class="small danger" onclick="delApi('+i+')">删除</button>'
       +'</div></td></tr>';
   });
-  $('apiList').innerHTML=h+'</tbody></table>';
+  $('apiList').innerHTML=h+'</tbody></table></div>';
 }
 function apiForm(x){
   x=x||{};
